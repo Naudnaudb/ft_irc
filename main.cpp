@@ -1,7 +1,5 @@
 #include "IrcServer.hpp"
 
-#define MAX_CONNECTIONS 10
-
 int main(int argc, char **argv)
 {
 	if (argc != 3)

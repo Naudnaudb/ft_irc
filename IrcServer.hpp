@@ -19,6 +19,7 @@
 # include <map>
 # include <set>
 # include <sstream>
+# include <tr1/regex>
 
 class IrcServer
 {

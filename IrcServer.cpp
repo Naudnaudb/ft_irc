@@ -1,6 +1,6 @@
 #include "IrcServer.hpp"
 
-#define MAX_CONNECTIONS 10
+#define MAX_CONNECTIONS 1000
 
 IrcServer::IrcServer(int port, const std::string &password) : password_(password), port_(port)
 {
@@ -61,6 +61,32 @@ void IrcServer::run()
 	close(server_socket_);
 }
 
+std::vector<std::string> IrcServer::tokenize(const std::string &message)
+{
+	std::vector<std::string> tokens;
+
+	size_t start = 0;
+	size_t end = message.find_first_of(" \n");
+
+	while (end != std::string::npos)
+	{
+		if (end > start)
+		{
+			tokens.push_back(message.substr(start, end - start));
+		}
+
+		start = end + 1;
+		end = message.find_first_of(" \n", start);
+	}
+
+	if (start < message.size())
+	{
+		tokens.push_back(message.substr(start));
+	}
+
+	return tokens;
+}
+
 void IrcServer::handle_client_connection(int client_socket)
 {
 	struct sockaddr_in client_address_;
@@ -69,17 +95,46 @@ void IrcServer::handle_client_connection(int client_socket)
 	getpeername(client_socket, (struct sockaddr *)&client_address_, &client_address_length);
 	std::cout << "Nouvelle connexion entrante : " << inet_ntoa(client_address_.sin_addr) << std::endl;
 
+	// Envoyer le message de bienvenue au client
+	std::string welcome_message = "Bienvenue sur le serveur IRC";
+	send_message_to_client(client_socket, welcome_message);
+
 	char buffer[4096];
 	int bytes_received = recv(client_socket, buffer, 4096, 0);
+
+	// Vérifier le mot de passe du client
+	std::string password;
+	std::string message(buffer, bytes_received);
+	std::vector<std::string> tokens = tokenize(message);
+	if (!tokens.empty())
+	{
+		std::string command = tokens[2];
+		std::cout << "Commande reçue : " << command << std::endl;
+		if (command == "PASS" && tokens.size() > 1)
+		{
+			password = tokens[3];
+			password.erase(std::remove(password.begin(), password.end(), '\r'), password.end());
+		}
+	}
+	if (password != password_)
+	{
+		// Mot de passe incorrect, fermer la connexion
+		std::string error_message = "Mot de passe incorrect";
+		send_message_to_client(client_socket, error_message);
+		close(client_socket);
+		return;
+	}
+
 	while (bytes_received > 0)
 	{
 		std::string message(buffer, bytes_received);
-		std::cout << "Message reçu : " << message << std::endl;
+		// std::cout << "Message reçu : " << message << std::endl;
 
 		std::vector<std::string> tokens = tokenize(message);
 		if (!tokens.empty())
 		{
 			std::string command = tokens[0];
+			std::cout << "Commande reçue : " << command << std::endl;
 			if (command == "JOIN" && tokens.size() > 1)
 			{
 				std::string channel = tokens[1];
@@ -97,31 +152,24 @@ void IrcServer::handle_client_connection(int client_socket)
 				std::string message = tokens[2];
 				handle_privmsg_command(recipient, message);
 			}
+			else if (command == "CAP" && tokens.size() > 1 && tokens[1] == "LS")
+			{
+				// Gestion de la commande CAP LS
+				if (tokens.size() > 2 && tokens[1] == "LS")
+				{
+					std::string message = "CAP * LS :multi-prefix";
+					send_message_to_client(client_socket, message);
+				}
+			}
 			else
 			{
 				std::cout << "Commande non reconnue" << std::endl;
 			}
 		}
-
-		std::cout << "Message reçu : " << buffer << std::endl;
-		send(client_socket, buffer, bytes_received, 0);
 		bytes_received = recv(client_socket, buffer, 4096, 0);
 	}
-
 	std::cout << "Connexion fermée" << std::endl;
 	close(client_socket);
-}
-
-std::vector<std::string> IrcServer::tokenize(const std::string &message)
-{
-	std::vector<std::string> tokens;
-	std::stringstream ss(message);
-	std::string token;
-	while (std::getline(ss, token, ' '))
-	{
-		tokens.push_back(token);
-	}
-	return tokens;
 }
 
 std::set<std::string> IrcServer::get_client_channels(int client_socket)
