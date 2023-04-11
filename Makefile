@@ -3,7 +3,7 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
 
 # Source files
-SRCS = main.cpp IrcServer.cpp
+SRCS = *.cpp
 
 # Header files
 HDRS = *.hpp
