@@ -24,11 +24,13 @@ class IrcServer
 {
 public:
 	IrcServer(int port, const std::string &password);
-	void run();
+	void poll_client_connections();
 
 private:
 	void handle_client_connection(int client_socket);
+	void handle_command(int client_socket);
 	void handle_nick_command(int client_socket, const std::string &new_nickname);
+	void handle_user_command(int client_socket, const std::string &username);
 	void handle_join_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void handle_privmsg_command(const std::string &recipient, const std::string &message);
 	void handle_part_command(int client_socket, const std::string &channel, const std::string &nickname);
@@ -44,6 +46,7 @@ private:
 	struct sockaddr_in client_address_;
 
 	std::map<int, std::string> client_nicknames_;
+	std::map<int, std::string> client_usernames_;
 	std::map<int, std::set<std::string> > client_channels_;
 };
 

@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	std::string PASSWORD = argv[2];
 
 	IrcServer ircServer(PORT, PASSWORD);
-	ircServer.run();
+	ircServer.poll_client_connections();
 
 	return 0;
 }

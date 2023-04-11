@@ -19,84 +19,86 @@ void IrcServer::handle_client_connection(int client_socket)
 	std::string password;
 	std::string message(buffer, bytes_received);
 	std::vector<std::string> tokens = tokenize(message);
+	int is_connected = 0;
 	if (!tokens.empty())
 	{
-		std::string command = tokens[2];
-		std::cout << "Commande reçue : " << command << std::endl;
-		if (command == "PASS" && tokens.size() > 1)
+		for (size_t i = 0; i < tokens.size(); i++)
 		{
-			password = tokens[3];
-		}
-	}
-	if (password != password_)
-	{
-		// Mot de passe incorrect, fermer la connexion
-		std::string error_message = "Mot de passe incorrect";
-		send_message_to_client(client_socket, error_message);
-		close(client_socket);
-		return;
-	}
-
-	while (bytes_received > 0)
-	{
-		std::string message(buffer, bytes_received);
-		// std::cout << "Message reçu : " << message << std::endl;
-
-		std::vector<std::string> tokens = tokenize(message);
-		if (!tokens.empty())
-		{
-			std::string command = tokens[0];
-			std::cout << "Commande reçue : " << command << std::endl;
-			if (command == "CAP" && tokens.size() > 1)
+			std::string command = tokens[i];
+			// std::cout << "Commande reçue : " << command << std::endl;
+			if (command == "CAP" || command == "LS")
+				continue;
+			else if (command == "PASS" && tokens.size() > 1)
 			{
-				// Gestion de la commande CAP LS
-				if (tokens.size() > 2 && tokens[1] == "LS")
+				password = tokens[i+1];
+				if (password != password_)
 				{
-					std::string message = "CAP * LS :multi-prefix";
-					send_message_to_client(client_socket, message);
+					// Mot de passe incorrect, fermer la connexion
+					std::string error_message = "Mot de passe incorrect";
+					send_message_to_client(client_socket, error_message);
+					close(client_socket);
+					return;
 				}
-				if (tokens.size() > 2 && tokens[1] == "REQ")
-				{
-					std::string message = "CAP * ACK :multi-prefix";
-					send_message_to_client(client_socket, message);
-				}
-				if (tokens.size() > 2 && tokens[1] == "END")
-				{
-					std::string message = "CAP * END";
-					send_message_to_client(client_socket, message);
-				}
-			}
-			else if (command == "JOIN" && tokens.size() > 1)
-			{
-				std::string channel = tokens[1];
-				std::string nickname = client_nicknames_[client_socket];
-				handle_join_command(client_socket, channel, nickname);
+				is_connected = 1;
 			}
 			else if (command == "NICK" && tokens.size() > 1)
 			{
-				std::string nickname = tokens[1];
+				std::string nickname = tokens[i+1];
 				handle_nick_command(client_socket, nickname);
 			}
-			else if (command == "PRIVMSG" && tokens.size() > 2)
+			else if (command == "USER" && tokens.size() > 1)
 			{
-				std::string recipient = tokens[1];
-				std::string message = tokens[2];
-				handle_privmsg_command(recipient, message);
+				std::string username = tokens[i+1];
+				handle_user_command(client_socket, username);
 			}
-			else if (command == "USER")
-			{
-				std::string message = "001 :Bienvenue sur le serveur IRC";
-				send_message_to_client(client_socket, message);
-			}
-			else if (command == "PING")
-			{
-				std::string message = "PONG";
-				send_message_to_client(client_socket, message);
-			}
-			else
-			{
-				std::cout << "Commande non reconnue" << std::endl;
-			}
+		}
+		if (!is_connected)
+		{
+			// Mot de passe incorrect, fermer la connexion
+			std::string error_message = "Mot de passe absent";
+			send_message_to_client(client_socket, error_message);
+			close(client_socket);
+			return;
+		}
+	}
+}
+
+void IrcServer::handle_command(int client_socket)
+{
+	char buffer[4096];
+	int bytes_received = recv(client_socket, buffer, 4096, 0);
+	std::string message(buffer, bytes_received);
+	std::vector<std::string> tokens = tokenize(message);
+
+	while (bytes_received > 0)
+	{
+		std::string command = tokens[0];
+		std::cout << "Commande reçue : " << command << std::endl;
+		if (command == "JOIN")
+		{
+			std::string channel = "#test";
+			std::string nickname = client_nicknames_[client_socket];
+			handle_join_command(client_socket, channel, nickname);
+		}
+		else if (command == "NICK")
+		{
+			std::string nickname = "test";
+			handle_nick_command(client_socket, nickname);
+		}
+		else if (command == "PRIVMSG")
+		{
+			std::string recipient = "#test";
+			std::string message = "test";
+			handle_privmsg_command(recipient, message);
+		}
+		else if (command == "PING")
+		{
+			std::string message = "PONG";
+			send_message_to_client(client_socket, message);
+		}
+		else
+		{
+			std::cout << "Commande non reconnue" << std::endl;
 		}
 		bytes_received = recv(client_socket, buffer, 4096, 0);
 	}
@@ -128,6 +130,11 @@ void IrcServer::handle_nick_command(int client_socket, const std::string &nickna
 		std::string welcome_message = "Bienvenue sur le canal " + (*it_set) + ", " + nickname + "!";
 		send_message_to_channel((*it_set), welcome_message);
 	}
+}
+
+void IrcServer::handle_user_command(int client_socket, const std::string &username)
+{
+	client_usernames_[client_socket] = username;
 }
 
 void IrcServer::handle_join_command(int client_socket, const std::string &channel, const std::string &nickname)

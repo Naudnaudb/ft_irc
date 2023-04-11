@@ -37,31 +37,63 @@ IrcServer::IrcServer(int port, const std::string &password) : password_(password
 	}
 }
 
-void IrcServer::run()
+// Ajoutez cette méthode à la fin du fichier
+void IrcServer::poll_client_connections()
 {
-	// Boucle principale du serveur
+	std::vector<pollfd> fds;
+	pollfd server_fd;
+	server_fd.fd = server_socket_;
+	server_fd.events = POLLIN;
+	fds.push_back(server_fd);
+
 	while (true)
 	{
-		// Accepter une connexion entrante
-		socklen_t client_address_length = sizeof(client_address_);
-		int client_socket = accept(server_socket_, (struct sockaddr *)&client_address_, &client_address_length);
-		if (client_socket == -1)
+		int poll_result = poll(fds.data(), fds.size(), -1);
+
+		if (poll_result < 0)
 		{
-			perror("Erreur lors de l'acceptation d'une connexion entrante");
-			continue;
+			perror("Erreur lors du poll");
+			exit(EXIT_FAILURE);
 		}
 
-		// Traiter la connexion entrante
-		handle_client_connection(client_socket);
-		// Gérer le protocole IRC
-		// Gérer les erreurs et les exceptions
+		for (size_t i = 0; i < fds.size(); ++i)
+		{
+			if (fds[i].revents & POLLIN)
+			{
+				if (fds[i].fd == server_socket_)
+				{
+					// Accepter une connexion entrante
+					socklen_t client_address_length = sizeof(client_address_);
+					int client_socket = accept(server_socket_, (struct sockaddr *)&client_address_, &client_address_length);
+					if (client_socket == -1)
+					{
+						perror("Erreur lors de l'acceptation d'une connexion entrante");
+						continue;
+					}
+
+					// Traiter la connexion entrante
+					handle_client_connection(client_socket);
+
+					// Ajouter le nouveau client_socket au pollfd
+					pollfd new_client_fd;
+					new_client_fd.fd = client_socket;
+					new_client_fd.events = POLLIN;
+					fds.push_back(new_client_fd);
+				}
+				else
+				{
+					// Traiter les commandes du client
+					handle_command(fds[i].fd);
+
+					// Supprimer le client_socket du pollfd s'il est fermé
+					close(fds[i].fd);
+					fds.erase(fds.begin() + i);
+					i--;
+				}
+			}
+		}
 	}
-
-	// Fermer le socket du serveur
-	close(server_socket_);
 }
-
-
 
 std::vector<std::string> IrcServer::tokenize(const std::string &message)
 {
@@ -72,7 +104,7 @@ std::vector<std::string> IrcServer::tokenize(const std::string &message)
 
 	while (end != std::string::npos)
 	{
-		if (end > start)
+		if (end > start && end <= message.size())
 		{
 			tokens.push_back(message.substr(start, end - start));
 		}
