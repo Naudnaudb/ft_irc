@@ -3,10 +3,10 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
 
 # Source files
-SRCS = *.cpp
+SRCS = $(wildcard *.cpp)
 
 # Header files
-HDRS = *.hpp
+HDRS = $(wildcard *.hpp)
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)
