@@ -25,7 +25,7 @@ void IrcServer::handle_client_connection(int client_socket)
 		for (size_t i = 0; i < tokens.size(); i++)
 		{
 			std::string command = tokens[i];
-			// std::cout << "Commande reçue : " << command << std::endl;
+			std::cout << "Commande reçue : " << command << std::endl;
 			if (command == "CAP" || command == "LS")
 				continue;
 			else if (command == "PASS" && tokens.size() > 1)
@@ -97,9 +97,7 @@ void IrcServer::handle_command(int client_socket)
 			send_message_to_client(client_socket, message);
 		}
 		else
-		{
 			std::cout << "Commande non reconnue" << std::endl;
-		}
 		bytes_received = recv(client_socket, buffer, 4096, 0);
 	}
 	std::cout << "Connexion fermée" << std::endl;
@@ -142,24 +140,16 @@ void IrcServer::handle_join_command(int client_socket, const std::string &channe
 	std::set<int> clients;
 	std::map<int, std::set<std::string> >::iterator it;
 	for (it = client_channels_.begin(); it != client_channels_.end(); ++it)
-	{
 		if (it->second.count(channel) > 0)
-		{
 			clients.insert(it->first);
-		}
-	}
 
 	if (client_channels_[client_socket].count(channel) == 0)
-	{
 		client_channels_[client_socket].insert(channel);
-	}
 
 	std::string welcome_message = "Bienvenue sur le canal " + channel + ", " + nickname + "!";
 	std::set<int>::iterator client_it;
 	for (client_it = clients.begin(); client_it != clients.end(); ++client_it)
-	{
 		send_message_to_client(*client_it, welcome_message);
-	}
 }
 
 void IrcServer::handle_privmsg_command(const std::string &recipient, const std::string &message)
@@ -187,7 +177,5 @@ void IrcServer::handle_part_command(int client_socket, const std::string &channe
 
 	// Supprimer le canal de la liste des canaux du client si nécessaire
 	if (channels.empty())
-	{
 		client_channels_.erase(client_socket);
-	}
 }
