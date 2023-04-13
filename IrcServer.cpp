@@ -105,18 +105,14 @@ std::vector<std::string> IrcServer::tokenize(const std::string &message)
 	while (end != std::string::npos)
 	{
 		if (end > start && end <= message.size())
-		{
 			tokens.push_back(message.substr(start, end - start));
-		}
 
 		start = end + 1;
 		end = message.find_first_of(" \n\r", start);
 	}
 
 	if (start < message.size())
-	{
 		tokens.push_back(message.substr(start));
-	}
 
 	return tokens;
 }
