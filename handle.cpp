@@ -8,100 +8,99 @@ void IrcServer::handle_client_connection(int client_socket)
 	getpeername(client_socket, (struct sockaddr *)&client_address_, &client_address_length);
 	std::cout << "Nouvelle connexion entrante : " << inet_ntoa(client_address_.sin_addr) << std::endl;
 
-	// Envoyer le message de bienvenue au client
-	std::string welcome_message = "Bienvenue sur le serveur IRC";
-	send_message_to_client(client_socket, welcome_message);
-
 	char buffer[4096];
-	int bytes_received = recv(client_socket, buffer, 4096, 0);
+	int bytes_received;
+	bool authenticated = false;
+	bool nickname_set = false;
+	bool username_set = false;
 
-	// Vérifier le mot de passe du client
-	std::string password;
-	std::string message(buffer, bytes_received);
-	std::vector<std::string> tokens = tokenize(message);
-	int is_connected = 0;
-	if (!tokens.empty())
+	while ((bytes_received = recv(client_socket, buffer, 4096, 0)) > 0)
 	{
-		for (size_t i = 0; i < tokens.size(); i++)
+		std::string message(buffer, bytes_received);
+		// std::cout << "Message reçu : " << message << std::endl;
+		std::vector<std::string> tokens = tokenize(message);
+
+		if (!tokens.empty())
 		{
-			std::string command = tokens[i];
-			std::cout << "Commande reçue : " << command << std::endl;
-			if (command == "CAP" || command == "LS")
-				continue;
-			else if (command == "PASS" && tokens.size() > 1)
+			for (size_t i = 0; i < tokens.size(); i++)
 			{
-				password = tokens[i+1];
-				if (password != password_)
+				std::string command = tokens[i];
+				// std::cout << "Commande reçue : " << command << std::endl;
+
+				if (command == "CAP" || command == "LS")
+					continue;
+				else if (command == "PASS" && tokens.size() > 1)
 				{
-					// Mot de passe incorrect, fermer la connexion
-					std::string error_message = "Mot de passe incorrect";
-					send_message_to_client(client_socket, error_message);
+					std::string password = tokens[i + 1];
+					if (password == password_)
+					{
+						authenticated = true;
+						send_response(client_socket, "001", "Bienvenue sur le serveur IRC");
+					}
+					else
+					{
+						send_response(client_socket, "464", "Mot de passe incorrect");
+						close(client_socket);
+						return;
+					}
+				}
+				else if (!authenticated)
+				{
+					send_response(client_socket, "464", "Mot de passe absent");
 					close(client_socket);
 					return;
 				}
-				is_connected = 1;
+				else if (command == "NICK" && tokens.size() > 1)
+				{
+					std::string nickname = tokens[i + 1];
+					handle_nick_command(client_socket, nickname);
+					nickname_set = true;
+				}
+				else if (command == "USER" && tokens.size() > 1)
+				{
+					std::string username = tokens[i + 1];
+					handle_user_command(client_socket, username);
+					username_set = true;
+				}
+				if (nickname_set && username_set)
+				{
+					handle_command(client_socket, tokens);
+				}
 			}
-			else if (command == "NICK" && tokens.size() > 1)
-			{
-				std::string nickname = tokens[i+1];
-				handle_nick_command(client_socket, nickname);
-			}
-			else if (command == "USER" && tokens.size() > 1)
-			{
-				std::string username = tokens[i+1];
-				handle_user_command(client_socket, username);
-			}
-		}
-		if (!is_connected)
-		{
-			// Mot de passe incorrect, fermer la connexion
-			std::string error_message = "Mot de passe absent";
-			send_message_to_client(client_socket, error_message);
-			close(client_socket);
-			return;
 		}
 	}
 }
 
-void IrcServer::handle_command(int client_socket)
+void IrcServer::handle_command(int client_socket, const std::vector<std::string> &tokens)
 {
-	char buffer[4096];
-	int bytes_received = recv(client_socket, buffer, 4096, 0);
-	std::string message(buffer, bytes_received);
-	std::vector<std::string> tokens = tokenize(message);
 
-	while (bytes_received > 0)
+	std::string command = tokens[0];
+	// std::cout << "Commande reçue : " << command << std::endl;
+	if (command == "JOIN")
 	{
-		std::string command = tokens[0];
-		std::cout << "Commande reçue : " << command << std::endl;
-		if (command == "JOIN")
-		{
-			std::string channel = "#test";
-			std::string nickname = client_nicknames_[client_socket];
-			handle_join_command(client_socket, channel, nickname);
-		}
-		else if (command == "NICK")
-		{
-			std::string nickname = "test";
-			handle_nick_command(client_socket, nickname);
-		}
-		else if (command == "PRIVMSG")
-		{
-			std::string recipient = "#test";
-			std::string message = "test";
-			handle_privmsg_command(recipient, message);
-		}
-		else if (command == "PING")
-		{
-			std::string message = "PONG";
-			send_message_to_client(client_socket, message);
-		}
-		else
-			std::cout << "Commande non reconnue" << std::endl;
-		bytes_received = recv(client_socket, buffer, 4096, 0);
+		std::string channel = "#test";
+		std::string nickname = client_nicknames_[client_socket];
+		handle_join_command(client_socket, channel, nickname);
 	}
-	std::cout << "Connexion fermée" << std::endl;
-	close(client_socket);
+	else if (command == "PRIVMSG")
+	{
+		std::string recipient = "#test";
+		std::string message = "test";
+		handle_privmsg_command(recipient, message);
+	}
+	else if (command == "PING")
+	{
+		std::string message = "PONG";
+		send_message_to_client(client_socket, message);
+	}
+	else
+		std::cout << "Commande non reconnue" << std::endl;
+}
+
+void IrcServer::handle_mode_command(int client_socket, const std::string &nickname)
+{
+	std::string message = "MODE " + nickname + " +i";
+	send_message_to_client(client_socket, message);
 }
 
 void IrcServer::handle_nick_command(int client_socket, const std::string &nickname)
@@ -112,7 +111,7 @@ void IrcServer::handle_nick_command(int client_socket, const std::string &nickna
 	{
 		if (it->second == nickname && it->first != client_socket)
 		{
-			send_message_to_client(client_socket, "ERR_NICKNAMEINUSE :Ce pseudonyme est déjà utilisé");
+			send_response(client_socket, "433", "Ce pseudonyme est déjà utilisé");
 			return;
 		}
 	}
@@ -132,7 +131,22 @@ void IrcServer::handle_nick_command(int client_socket, const std::string &nickna
 
 void IrcServer::handle_user_command(int client_socket, const std::string &username)
 {
+	// Vérifier si le nom d'utilisateur est déjà utilisé
+	std::map<int, std::string>::iterator it;
+	for (it = client_usernames_.begin(); it != client_usernames_.end(); ++it)
+	{
+		if (it->second == username && it->first != client_socket)
+		{
+			send_response(client_socket, "462", "Vous êtes déjà enregistré");
+			return;
+		}
+	}
+
+	// Changer le nom d'utilisateur du client
 	client_usernames_[client_socket] = username;
+
+	// Envoyer un message de bienvenue au client avec son nouveau nom d'utilisateur
+	send_message_to_client(client_socket, "Vous êtes connecté en tant que " + username + " !");
 }
 
 void IrcServer::handle_join_command(int client_socket, const std::string &channel, const std::string &nickname)

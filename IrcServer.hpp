@@ -20,6 +20,9 @@
 # include <set>
 # include <sstream>
 
+# define MAX_CLIENTS 100
+# define SERVER_NAME "ft_ircserv"
+
 class IrcServer
 {
 public:
@@ -28,14 +31,16 @@ public:
 
 private:
 	void handle_client_connection(int client_socket);
-	void handle_command(int client_socket);
+	void handle_command(int client_socket, const std::vector<std::string> &tokens);
 	void handle_nick_command(int client_socket, const std::string &new_nickname);
 	void handle_user_command(int client_socket, const std::string &username);
 	void handle_join_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void handle_privmsg_command(const std::string &recipient, const std::string &message);
 	void handle_part_command(int client_socket, const std::string &channel, const std::string &nickname);
+	void handle_mode_command(int client_socket, const std::string &nickname);
 	void send_message_to_channel(const std::string &channel, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
+	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	std::vector<std::string> tokenize(const std::string &message);
 	std::string password_;
 	std::set<std::string> get_client_channels(int client_socket);

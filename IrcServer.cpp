@@ -11,19 +11,19 @@ IrcServer::IrcServer(int port, const std::string &password) : password_(password
 		exit(EXIT_FAILURE);
 	}
 
-	int opt = 1;
-	if (setsockopt(server_socket_, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-	{
-		perror("setsockopt");
-		exit(EXIT_FAILURE);
-	}
+	// int opt = 1;
+	// if (setsockopt(server_socket_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+	// {
+	// 	perror("setsockopt");
+	// 	exit(EXIT_FAILURE);
+	// }
 	// Configuration de l'adresse du serveur
 	server_address_.sin_family = AF_INET;
 	server_address_.sin_addr.s_addr = INADDR_ANY;
 	server_address_.sin_port = htons(port_);
 
 	// Liaison du socket à l'adresse du serveur
-	if (bind(server_socket_, (struct sockaddr *)&server_address_, sizeof(server_address_)) == -1)
+	if (bind(server_socket_, (struct sockaddr *)&server_address_, sizeof(server_address_)) < 0)
 	{
 		perror("Erreur lors de la liaison du socket");
 		exit(EXIT_FAILURE);
@@ -60,6 +60,7 @@ void IrcServer::poll_client_connections()
 		{
 			if (fds[i].revents & POLLIN)
 			{
+				// std::cout << "fd:" << fds[i].fd << std::endl;
 				if (fds[i].fd == server_socket_)
 				{
 					// Accepter une connexion entrante
@@ -73,7 +74,6 @@ void IrcServer::poll_client_connections()
 
 					// Traiter la connexion entrante
 					handle_client_connection(client_socket);
-
 					// Ajouter le nouveau client_socket au pollfd
 					pollfd new_client_fd;
 					new_client_fd.fd = client_socket;
@@ -82,9 +82,6 @@ void IrcServer::poll_client_connections()
 				}
 				else
 				{
-					// Traiter les commandes du client
-					handle_command(fds[i].fd);
-
 					// Supprimer le client_socket du pollfd s'il est fermé
 					close(fds[i].fd);
 					fds.erase(fds.begin() + i);
@@ -126,6 +123,12 @@ std::set<std::string> IrcServer::get_client_channels(int client_socket)
 		if (it->first == client_socket)
 			channels.insert(it->second.begin(), it->second.end());
 	return channels;
+}
+
+void IrcServer::send_response(int client_socket, const std::string &response_code, const std::string &message)
+{
+	std::string response = ":" + std::string(SERVER_NAME) + " " + response_code + " : " + message;
+	send_message_to_client(client_socket, response);
 }
 
 void IrcServer::send_message_to_client(int client_socket, const std::string &message)
