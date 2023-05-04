@@ -21,7 +21,7 @@
 # include <sstream>
 
 # define MAX_CLIENTS 100
-# define SERVER_NAME "ft_ircserv"
+# define SERVER_NAME "ft_ircserv.fr"
 
 class IrcServer
 {
@@ -38,6 +38,7 @@ private:
 	void handle_privmsg_command(const std::string &recipient, const std::string &message);
 	void handle_part_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void handle_mode_command(int client_socket, const std::string &nickname);
+	void handle_whois_command(int client_socket, const std::string &nickname);
 	void send_message_to_channel(const std::string &channel, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);

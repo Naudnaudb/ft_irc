@@ -13,6 +13,7 @@ void IrcServer::handle_client_connection(int client_socket)
 	bool authenticated = false;
 	bool nickname_set = false;
 	bool username_set = false;
+	std::string nickname = "";
 
 	while ((bytes_received = recv(client_socket, buffer, 4096, 0)) > 0)
 	{
@@ -25,7 +26,7 @@ void IrcServer::handle_client_connection(int client_socket)
 			for (size_t i = 0; i < tokens.size(); i++)
 			{
 				std::string command = tokens[i];
-				// std::cout << "Commande reçue : " << command << std::endl;
+				std::cout << "Commande reçue : " << command << std::endl;
 
 				if (command == "CAP" || command == "LS")
 					continue;
@@ -43,6 +44,7 @@ void IrcServer::handle_client_connection(int client_socket)
 						close(client_socket);
 						return;
 					}
+					i++;
 				}
 				else if (!authenticated)
 				{
@@ -52,17 +54,19 @@ void IrcServer::handle_client_connection(int client_socket)
 				}
 				else if (command == "NICK" && tokens.size() > 1)
 				{
-					std::string nickname = tokens[i + 1];
+					nickname = tokens[i + 1];
 					handle_nick_command(client_socket, nickname);
 					nickname_set = true;
+					i++;
 				}
 				else if (command == "USER" && tokens.size() > 1)
 				{
-					std::string username = tokens[i + 1];
+					std::string username = tokens[i + 5] + tokens[i + 6];
 					handle_user_command(client_socket, username);
 					username_set = true;
+					i += 6;
 				}
-				if (nickname_set && username_set)
+				else if (nickname_set && username_set)
 				{
 					handle_command(client_socket, tokens);
 				}
@@ -93,14 +97,32 @@ void IrcServer::handle_command(int client_socket, const std::vector<std::string>
 		std::string message = "PONG";
 		send_message_to_client(client_socket, message);
 	}
+	else if (command == "MODE")
+	{
+		std::string nickname = client_nicknames_[client_socket];
+		handle_mode_command(client_socket, nickname);
+	}
+	else if (command == "WHOIS")
+	{
+		std::string nickname = client_nicknames_[client_socket];
+		handle_whois_command(client_socket, nickname);
+	}
 	else
 		std::cout << "Commande non reconnue" << std::endl;
 }
 
 void IrcServer::handle_mode_command(int client_socket, const std::string &nickname)
 {
-	std::string message = "MODE " + nickname + " +i";
-	send_message_to_client(client_socket, message);
+	nickname.empty();
+	std::string message = "Vous êtes en mode invisible";
+	send_response(client_socket, "MODE", message);
+}
+
+void IrcServer::handle_whois_command(int client_socket, const std::string &nickname)
+{
+	nickname.empty();
+	std::string message = "Vous êtes en mode invisible";
+	send_response(client_socket, "WHOIS", message);
 }
 
 void IrcServer::handle_nick_command(int client_socket, const std::string &nickname)
@@ -117,7 +139,18 @@ void IrcServer::handle_nick_command(int client_socket, const std::string &nickna
 	}
 
 	// Changer le pseudonyme du client
+	std::string old_nickname = client_nicknames_[client_socket];
 	client_nicknames_[client_socket] = nickname;
+
+	// Envoyer un message de bienvenue au client avec son nouveau pseudonyme
+	if (old_nickname.empty())
+	{
+		send_response(client_socket, "001", "Vous êtes connecté en tant que " + nickname + " !");
+	}
+	else
+	{
+		send_response(client_socket, "Nick change", "Votre pseudonyme est maintenant " + nickname);
+	}
 
 	// Envoyer un message de bienvenue au client avec son nouveau pseudonyme
 	std::set<std::string> channels = get_client_channels(client_socket);
@@ -146,7 +179,7 @@ void IrcServer::handle_user_command(int client_socket, const std::string &userna
 	client_usernames_[client_socket] = username;
 
 	// Envoyer un message de bienvenue au client avec son nouveau nom d'utilisateur
-	send_message_to_client(client_socket, "Vous êtes connecté en tant que " + username + " !");
+	// send_message_to_client(client_socket, "Vous êtes connecté en tant que " + username + " !");
 }
 
 void IrcServer::handle_join_command(int client_socket, const std::string &channel, const std::string &nickname)
