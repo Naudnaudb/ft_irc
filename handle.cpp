@@ -51,9 +51,6 @@ void IrcServer::handle_user_command(int client_socket, const std::string &userna
 
 	// Changer le nom d'utilisateur du client
 	client_usernames_[client_socket] = username;
-
-	// Envoyer un message de bienvenue au client avec son nouveau nom d'utilisateur
-	// send_message_to_client(client_socket, "Vous êtes connecté en tant que " + username + " !");
 }
 
 void IrcServer::handle_join_command(int client_socket, const std::string &channel, const std::string &nickname)
