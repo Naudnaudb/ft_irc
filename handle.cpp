@@ -14,7 +14,7 @@ void IrcServer::handle_whois_command(int client_socket, const std::string &nickn
 	send_response(client_socket, "WHOIS", message);
 }
 
-void IrcServer::handle_nick_command(int client_socket, const std::string &nickname)
+void IrcServer::nick_command(int client_socket, const std::string &nickname)
 {
 	// Vérifier si le pseudonyme est déjà utilisé
 	std::map<int, std::string>::iterator it;
@@ -33,18 +33,7 @@ void IrcServer::handle_nick_command(int client_socket, const std::string &nickna
 
 	// Envoyer un message de bienvenue au client avec son nouveau pseudonyme
 	if (old_nickname.empty())
-		send_response(client_socket, "001", "Vous êtes connecté en tant que " + nickname + " !");
-	else
-		send_response(client_socket, "Nick change", "Votre pseudonyme est maintenant " + nickname);
-
-	// Envoyer un message de bienvenue au client avec son nouveau pseudonyme
-	std::set<std::string> channels = get_client_channels(client_socket);
-	std::set<std::string>::iterator it_set;
-	for (it_set = channels.begin(); it_set != channels.end(); ++it_set)
-	{
-		std::string welcome_message = "Bienvenue sur le canal " + (*it_set) + ", " + nickname + "!";
-		send_message_to_channel((*it_set), welcome_message);
-	}
+		send_message_to_client(client_socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Bienvenue sur le serveur " + SERVER_NAME + ", " + nickname + " !");
 }
 
 void IrcServer::handle_user_command(int client_socket, const std::string &username)
@@ -125,7 +114,7 @@ void IrcServer::handle_command(int client_socket, const std::vector<std::string>
 	}
 	else if (command == "NICK")
 	{
-		handle_nick_command(client_socket, tokens[1]);
+		// TOO DO : handle_nick_command(client_socket, tokens[1]);
 	}
 	else if (command == "PRIVMSG")
 	{
@@ -187,7 +176,7 @@ void IrcServer::handle_client_connection(int client_socket)
 					if (password == password_)
 					{
 						authenticated = true;
-						send_response(client_socket, "001", "Bienvenue sur le serveur IRC");
+						send_response(client_socket, "001", "Bienvenue sur le serveur ft_ircserv.fr");
 					}
 					else
 					{
@@ -206,7 +195,7 @@ void IrcServer::handle_client_connection(int client_socket)
 				else if (command == "NICK" && tokens.size() > 1)
 				{
 					nickname = tokens[i + 1];
-					handle_nick_command(client_socket, nickname);
+					nick_command(client_socket, nickname);
 					nickname_set = true;
 					i++;
 				}
@@ -218,10 +207,7 @@ void IrcServer::handle_client_connection(int client_socket)
 					i += 6;
 				}
 				else if (nickname_set && username_set)
-				{
-					std::cout << "In handle_command" << std::endl;
 					handle_command(client_socket, tokens);
-				}
 			}
 		}
 	}
