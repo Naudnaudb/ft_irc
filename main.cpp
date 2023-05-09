@@ -1,14 +1,31 @@
 #include "IrcServer.hpp"
 
-int main(int argc, char **argv)
+bool check_args(int argc, char **argv, int &PORT, std::string &PASSWORD)
 {
+	char *endptr;
+
 	if (argc != 3)
 	{
 		std::cout << "Usage: ./ircserv [port] [password]" << std::endl;
-		return (1);
+		return (false);
 	}
-	int PORT = atoi(argv[1]);
-	std::string PASSWORD = argv[2];
+	PORT = strtol(argv[1], &endptr, 10);
+	if (*endptr != '\0')
+	{
+		std::cout << "Invalid port" << std::endl;
+		return (false);
+	}
+	PASSWORD = argv[2];
+	return (true);
+}
+
+int main(int argc, char **argv)
+{
+	int PORT = 0;
+	std::string PASSWORD;
+
+	if(check_args(argc, argv, PORT, PASSWORD) == false)
+		return (EXIT_FAILURE);
 
 	IrcServer ircServer(PORT, PASSWORD);
 	ircServer.poll_client_connections();
