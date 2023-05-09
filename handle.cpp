@@ -189,14 +189,14 @@ void IrcServer::handle_client_connection(int client_socket)
 					close(client_socket);
 					return;
 				}
-				else if (command == "NICK" && tokens.size() > 1)
+				else if (command == "NICK" && tokens.size() > 1 && nickname_set == false)
 				{
 					nickname = tokens[i + 1];
 					nick_command(client_socket, nickname);
 					nickname_set = true;
 					i++;
 				}
-				else if (command == "USER" && tokens.size() > 1)
+				else if (command == "USER" && tokens.size() > 1 && username_set == false)
 				{
 					std::string username = tokens[i + 5] + tokens[i + 6];
 					handle_user_command(client_socket, username);
