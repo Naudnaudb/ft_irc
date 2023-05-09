@@ -174,10 +174,7 @@ void IrcServer::handle_client_connection(int client_socket)
 				{
 					std::string password = tokens[i + 1];
 					if (password == password_)
-					{
 						authenticated = true;
-						send_response(client_socket, "001", "Bienvenue sur le serveur ft_ircserv.fr");
-					}
 					else
 					{
 						send_response(client_socket, "464", "Mot de passe incorrect");
