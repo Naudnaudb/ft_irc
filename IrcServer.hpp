@@ -26,10 +26,16 @@
 class IrcServer
 {
 public:
+	//	IrcServer.cpp
 	IrcServer(int port, const std::string &password);
 	void poll_client_connections();
 
 private:
+	//	IrcServer.cpp
+	std::vector<std::string> tokenize(const std::string &message);
+	std::set<std::string> get_client_channels(int client_socket);
+
+	//	handle.cpp
 	void handle_client_connection(int client_socket);
 	void handle_command(int client_socket, const std::vector<std::string> &tokens);
 	void nick_command(int client_socket, const std::string &new_nickname);
@@ -40,15 +46,15 @@ private:
 	void handle_part_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void handle_mode_command(int client_socket, const std::string &nickname);
 	void handle_whois_command(int client_socket, const std::string &nickname);
+	
+	//	send.cpp
 	void send_message_to_channel(const std::string &channel, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
-	std::vector<std::string> tokenize(const std::string &message);
-	std::string password_;
-	std::set<std::string> get_client_channels(int client_socket);
-	int server_socket_;
+	
 	int port_;
-
+	std::string password_;
+	int server_socket_;
 	struct sockaddr_in server_address_;
 	struct sockaddr_in client_address_;
 
