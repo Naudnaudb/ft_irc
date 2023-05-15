@@ -89,7 +89,7 @@ void IrcServer::poll_client_connections()
 	}
 }
 
-IrcServer::IrcServer(int port, const std::string &password) : password_(password), port_(port)
+IrcServer::IrcServer(int port, const std::string &password) : port_(port), password_(password)
 {
 	// Création du socket
 	if ((server_socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1)
