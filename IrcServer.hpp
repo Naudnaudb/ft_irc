@@ -38,8 +38,7 @@ private:
 	//	handle.cpp
 	void handle_client_connection(int client_socket);
 	void handle_command(int client_socket, const std::vector<std::string> &tokens);
-	void nick_command(int client_socket, const std::string &new_nickname);
-	// void handle_nick_command(int client_socket, const std::string &new_nick, const std::string &old_nick);
+	void handle_nick_command(int client_socket, const std::string &new_nickname);
 	void handle_user_command(int client_socket, const std::string &username);
 	void handle_join_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void handle_privmsg_command(const std::string &recipient, const std::string &message);
@@ -48,9 +47,9 @@ private:
 	void handle_whois_command(int client_socket, const std::string &nickname);
 	
 	//	send.cpp
-	void send_message_to_channel(const std::string &channel, const std::string &message);
+	void send_response(int client_socket, const std::string &response_code, const std::string opt, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
-	void send_response(int client_socket, const std::string &response_code, const std::string &message);
+	void send_message_to_channel(const std::string &channel, const std::string &message);
 	
 	int port_;
 	std::string password_;
