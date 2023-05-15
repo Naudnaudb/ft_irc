@@ -1,4 +1,0 @@
-<< CAP LS
-<< PASS te
-<< NICK abordack
-<< USER abordack abordack localhost :Arnaud BORDACK

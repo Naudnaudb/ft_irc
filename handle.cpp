@@ -4,14 +4,14 @@ void IrcServer::handle_mode_command(int client_socket, const std::string &nickna
 {
 	nickname.empty();
 	std::string message = "Vous êtes en mode invisible";
-	send_response(client_socket, "MODE", NULL, message);
+	send_response(client_socket, "MODE", message);
 }
 
 void IrcServer::handle_whois_command(int client_socket, const std::string &nickname)
 {
 	nickname.empty();
 	std::string message = "Vous êtes en mode invisible";
-	send_response(client_socket, "WHOIS", NULL, message);
+	send_response(client_socket, "WHOIS", message);
 }
 
 void IrcServer::handle_join_command(int client_socket, const std::string &channel, const std::string &nickname)
@@ -67,7 +67,7 @@ void IrcServer::handle_user_command(int client_socket, const std::string &userna
 	{
 		if (it->second == username && it->first != client_socket)
 		{
-			send_response(client_socket, "462", NULL, "Vous êtes déjà enregistré");
+			send_response(client_socket, "462", "Vous êtes déjà enregistré");
 			return;
 		}
 	}
@@ -84,7 +84,7 @@ void IrcServer::handle_nick_command(int client_socket, const std::string &nickna
 	{
 		if (it->second == nickname && it->first != client_socket)
 		{
-			send_response(client_socket, "433", NULL, "Ce pseudonyme est déjà utilisé");
+			send_response(client_socket, "433", "Ce pseudonyme est déjà utilisé");
 			return;
 		}
 	}
@@ -97,7 +97,7 @@ void IrcServer::handle_nick_command(int client_socket, const std::string &nickna
 	if (old_nickname.empty())
 		send_message_to_client(client_socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Bienvenue sur le serveur " + SERVER_NAME + ", " + nickname + " !");
 	else
-		send_response(client_socket, "001", nickname, "Your nickname is update : " + nickname);
+		send_message_to_client(client_socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Votre pseudonyme a été changé de " + old_nickname + " à " + nickname);
 }
 
 void IrcServer::handle_command(int client_socket, const std::vector<std::string> &tokens)
@@ -176,7 +176,7 @@ void IrcServer::handle_client_connection(int client_socket)
 						authenticated = true;
 					else
 					{
-						send_response(client_socket, "464", NULL,  "Mot de passe incorrect");
+						send_response(client_socket, "464", "Mot de passe incorrect");
 						close(client_socket);
 						return;
 					}
@@ -184,7 +184,7 @@ void IrcServer::handle_client_connection(int client_socket)
 				}
 				else if (!authenticated)
 				{
-					send_response(client_socket, "464", NULL, "Mot de passe absent");
+					send_response(client_socket, "464", "Mot de passe absent");
 					close(client_socket);
 					return;
 				}

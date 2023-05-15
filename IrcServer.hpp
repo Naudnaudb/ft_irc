@@ -47,7 +47,7 @@ private:
 	void handle_whois_command(int client_socket, const std::string &nickname);
 	
 	//	send.cpp
-	void send_response(int client_socket, const std::string &response_code, const std::string opt, const std::string &message);
+	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
 	void send_message_to_channel(const std::string &channel, const std::string &message);
 	

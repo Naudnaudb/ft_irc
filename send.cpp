@@ -1,12 +1,8 @@
 #include "IrcServer.hpp"
 
-void IrcServer::send_response(int client_socket, const std::string &response_code, const std::string opt, const std::string &message)
+void IrcServer::send_response(int client_socket, const std::string &response_code, const std::string &message)
 {
-	std::string response = NULL;
-	if (!opt.empty())
-		response = ":" + std::string(SERVER_NAME) + " " + response_code + " " + opt + " :" + message;
-	else
-		response = ":" + std::string(SERVER_NAME) + " " + response_code + " :" + message;
+	std::string response = ":" + std::string(SERVER_NAME) + " " + response_code + " : " + message;
 	send_message_to_client(client_socket, response);
 }
 
