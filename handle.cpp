@@ -140,7 +140,68 @@ void IrcServer::handle_command(int client_socket, const std::vector<std::string>
 		std::cout << "Commande non reconnue" << std::endl;
 }
 
-void IrcServer::handle_client_connection(int client_socket)
+int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std::string> tokens)
+{
+	user current_user;
+	bool authenticated = false;
+	bool nickname_set = false;
+	bool username_set = false;
+
+	if (tokens.empty())
+		return -1;
+	for (size_t i = 0; i < tokens.size(); i++)
+	{
+		std::string command = tokens[i];
+		// std::cout << "Commande reçue : " << command << std::endl;
+		if (command == "CAP" || command == "LS")
+			continue;
+		else if (command == "PASS" && tokens.size() > 1)
+		{
+			std::string password = tokens[i + 1];
+			if (password == password_)
+				authenticated = true;
+			else
+			{
+				send_response(client_socket, "464", "Mot de passe incorrect");
+				return -1;
+			}
+			i++;
+		}
+		else if (!authenticated)
+		{
+			send_response(client_socket, "464", "Mot de passe absent");
+			return -1;
+		}
+		else if (command == "NICK" && tokens.size() > 1 && nickname_set == false)
+		{
+			current_user.nickname = tokens[i + 1];
+			handle_nick_command(client_socket, current_user.nickname);
+			nickname_set = true;
+			i++;
+		}
+		else if (command == "USER" && tokens.size() > 1 && username_set == false)
+		{
+			current_user.username = tokens[i + 5] + tokens[i + 6];
+			handle_user_command(client_socket, current_user.username);
+			username_set = true;
+			i += 6;
+		}
+		else if (nickname_set && username_set)
+			handle_command(client_socket, tokens);
+	}
+	users_list.insert(std::pair<int, user>(client_socket, current_user));
+	return 0;
+}
+
+int	IrcServer::handle_client_reply(int client_socket, std::vector<std::string> tokens)
+{
+	if (tokens.empty())
+		return -1;
+	handle_command(client_socket, tokens);
+	return 0;
+}
+
+int IrcServer::handle_client_connection(int client_socket)
 {
 	struct sockaddr_in client_address_;
 
@@ -149,62 +210,21 @@ void IrcServer::handle_client_connection(int client_socket)
 	std::cout << "Nouvelle connexion entrante : " << inet_ntoa(client_address_.sin_addr) << std::endl;
 
 	char buffer[4096];
-	int bytes_received;
-	bool authenticated = false;
-	bool nickname_set = false;
-	bool username_set = false;
-	std::string nickname = "";
-
-	while ((bytes_received = recv(client_socket, buffer, 4096, 0)) > 0)
+	int bytes_received = recv(client_socket, buffer, 4096, 0);
+	if (bytes_received < 0)
 	{
-		std::string message(buffer, bytes_received);
-		// std::cout << "Message reçu : " << message << std::endl;
-		std::vector<std::string> tokens = tokenize(message);
-
-		if (!tokens.empty())
-		{
-			for (size_t i = 0; i < tokens.size(); i++)
-			{
-				std::string command = tokens[i];
-				// std::cout << "Commande reçue : " << command << std::endl;
-				if (command == "CAP" || command == "LS")
-					continue;
-				else if (command == "PASS" && tokens.size() > 1)
-				{
-					std::string password = tokens[i + 1];
-					if (password == password_)
-						authenticated = true;
-					else
-					{
-						send_response(client_socket, "464", "Mot de passe incorrect");
-						close(client_socket);
-						return;
-					}
-					i++;
-				}
-				else if (!authenticated)
-				{
-					send_response(client_socket, "464", "Mot de passe absent");
-					close(client_socket);
-					return;
-				}
-				else if (command == "NICK" && tokens.size() > 1 && nickname_set == false)
-				{
-					nickname = tokens[i + 1];
-					handle_nick_command(client_socket, nickname);
-					nickname_set = true;
-					i++;
-				}
-				else if (command == "USER" && tokens.size() > 1 && username_set == false)
-				{
-					std::string username = tokens[i + 5] + tokens[i + 6];
-					handle_user_command(client_socket, username);
-					username_set = true;
-					i += 6;
-				}
-				else if (nickname_set && username_set)
-					handle_command(client_socket, tokens);
-			}
-		}
+		perror("Error: recv() failed");
+		exit(EXIT_FAILURE);
 	}
+	else if (bytes_received == 0)
+		return -1;
+	std::string message(buffer, bytes_received);
+	// std::cout << "Message reçu : " << message << std::endl;
+	std::vector<std::string> tokens = tokenize(message);
+
+	// check if the client is new
+	if (users_list.find(client_socket) == users_list.end())
+		return handle_client_first_connection(client_socket, tokens);
+	else
+		return handle_client_reply(client_socket, tokens);
 }

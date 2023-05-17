@@ -23,6 +23,8 @@
 # define MAX_CLIENTS 100
 # define SERVER_NAME "ft_ircserv.fr"
 
+# define OFFLINE -1
+
 class IrcServer
 {
 public:
@@ -36,7 +38,7 @@ private:
 	std::set<std::string> get_client_channels(int client_socket);
 
 	//	handle.cpp
-	void handle_client_connection(int client_socket);
+	int handle_client_connection(int client_socket);
 	void handle_command(int client_socket, const std::vector<std::string> &tokens);
 	void handle_nick_command(int client_socket, const std::string &new_nickname);
 	void handle_user_command(int client_socket, const std::string &username);
@@ -45,6 +47,8 @@ private:
 	void handle_part_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void handle_mode_command(int client_socket, const std::string &nickname);
 	void handle_whois_command(int client_socket, const std::string &nickname);
+	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
+	int	handle_client_reply(int client_socket, std::vector<std::string> tokens);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
@@ -56,6 +60,18 @@ private:
 	int server_socket_;
 	struct sockaddr_in server_address_;
 	struct sockaddr_in client_address_;
+
+	class user
+	{
+	public:
+		user() : nickname(), username(), channels() {}
+		std::string					nickname;
+		std::string					username;
+		std::vector<std::string>	channels;
+	};
+
+	// users list where int parameter is the fd corresponding to the user
+	std::map<int , user> users_list;
 
 	std::map<int, std::string> client_nicknames_;
 	std::map<int, std::string> client_usernames_;
