@@ -16,7 +16,7 @@ void IrcServer::send_message_to_client(int client_socket, const std::string &mes
 
 	// Vérifier si l'envoi a réussi
 	if (bytes_sent == -1)
-		std::cerr << "Erreur lors de l'envoi du message au client (socket: " << client_socket << "): " << strerror(errno) << std::endl;
+		std::cerr << "Error: sending message to client (socket: " << client_socket << "): " << strerror(errno) << std::endl;
 }
 
 void IrcServer::send_message_to_channel(const std::string &channel, const std::string &message)

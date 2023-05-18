@@ -49,7 +49,7 @@ void IrcServer::poll_client_connections()
 		int poll_result = poll(fds_to_poll.data(), fds_to_poll.size(), -1);
 		if (poll_result < 0)
 		{
-			perror("Erreur lors du poll");
+			perror("Error : Poll");
 			exit(EXIT_FAILURE);
 		}
 
@@ -64,7 +64,7 @@ void IrcServer::poll_client_connections()
 					int client_socket = accept(server_socket_, reinterpret_cast<sockaddr *>(&client_address_), &client_address_length);
 					if (client_socket == -1)
 					{
-						perror("Erreur lors de l'acceptation d'une connexion entrante");
+						perror("Error: accepting an incoming connection");
 						continue;
 					}
 					// Set I/O fds to non-blocking

@@ -40,13 +40,13 @@ private:
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
 	void handle_command(int client_socket, const std::vector<std::string> &tokens);
-	void handle_nick_command(int client_socket, const std::string &new_nickname);
-	void handle_user_command(int client_socket, const std::string &username);
-	void handle_join_command(int client_socket, const std::string &channel, const std::string &nickname);
-	void handle_privmsg_command(const std::string &recipient, const std::string &message);
-	void handle_part_command(int client_socket, const std::string &channel, const std::string &nickname);
-	void handle_mode_command(int client_socket, const std::string &nickname);
-	void handle_whois_command(int client_socket, const std::string &nickname);
+	void nick_command(int client_socket, const std::string &new_nickname);
+	void user_command(int client_socket, const std::string &username);
+	void join_command(int client_socket, const std::string &channel, const std::string &nickname);
+	void privmsg_command(const std::string &recipient, const std::string &message);
+	void part_command(int client_socket, const std::string &channel, const std::string &nickname);
+	void mode_command(int client_socket, const std::string &nickname);
+	void whois_command(int client_socket, const std::string &nickname);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
 	int	handle_client_reply(int client_socket, std::vector<std::string> tokens);
 	
@@ -73,8 +73,9 @@ private:
 	// users list where int parameter is the fd corresponding to the user
 	std::map<int , user> users_list;
 
-	std::map<int, std::string> client_nicknames_;
-	std::map<int, std::string> client_usernames_;
+	// bool operator==(const user& lhs, const std::string& rhs);
+	// std::map<int, std::string> client_nicknames_;
+	// std::map<int, std::string> client_usernames_;
 	std::map<int, std::set<std::string> > client_channels_;
 };
 
