@@ -40,15 +40,6 @@ void IrcServer::handle_command(int client_socket, const std::vector<std::string>
 		std::cout << "Unknown command" << std::endl;
 }
 
-int IrcServer::handle_client_reply(int client_socket, std::string message)
-{
-	// if the message is empty it means client disconnected
-	if (message.empty())
-		return -1;
-	std::vector<std::string> tokens = tokenize(message);
-	return handle_command(client_socket, tokens);
-}
-
 int IrcServer::handle_client_connection(int client_socket)
 {
 	struct sockaddr_in client_address_;
@@ -67,5 +58,9 @@ int IrcServer::handle_client_connection(int client_socket)
 	else if (bytes_received == 0)
 		return -1;
 	std::string message(buffer, bytes_received);
-	return handle_client_reply(client_socket, message);
+	// if the message is empty it means client disconnected
+	if (message.empty())
+		return -1;
+	std::vector<std::string> tokens = tokenize(message);
+	return handle_command(client_socket, tokens);
 }

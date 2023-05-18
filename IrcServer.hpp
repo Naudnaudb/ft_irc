@@ -47,8 +47,6 @@ private:
 	void part_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void mode_command(int client_socket, const std::string &nickname);
 	void whois_command(int client_socket, const std::string &nickname);
-	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
-	int	handle_client_reply(int client_socket, std::vector<std::string> tokens);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
