@@ -47,6 +47,7 @@ private:
 	void part_command(int client_socket, const std::string &channel, const std::string &nickname);
 	void mode_command(int client_socket, const std::string &nickname);
 	void whois_command(int client_socket, const std::string &nickname);
+	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
@@ -65,6 +66,7 @@ private:
 		user() : nickname(), username(), channels() {}
 		std::string					nickname;
 		std::string					username;
+		int							mode; //masque logique
 		std::vector<std::string>	channels;
 	};
 
@@ -74,7 +76,7 @@ private:
 	// bool operator==(const user& lhs, const std::string& rhs);
 	// std::map<int, std::string> client_nicknames_;
 	// std::map<int, std::string> client_usernames_;
-	std::map<int, std::set<std::string> > client_channels_;
+	// std::map<int, std::set<std::string> > client_channels_;
 };
 
 #endif
