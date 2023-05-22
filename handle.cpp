@@ -1,25 +1,24 @@
 #include "IrcServer.hpp"
 
-void IrcServer::handle_command(int client_socket, const std::vector<std::string> &tokens)
+int IrcServer::handle_command(int client_socket, const std::vector<std::string> &tokens)
 {
-
 	std::string command = tokens[0];
 	// std::cout << "Commande reçue : " << command << std::endl;
 	if (command == "JOIN")
 	{
 		std::string channel = "#test";
 		std::string nickname = users_list[client_socket].nickname;
-		handle_join_command(client_socket, channel, nickname);
+		join_command(client_socket, channel, nickname);
 	}
 	else if (command == "NICK")
 	{
-		handle_nick_command(client_socket, tokens[1]);
+		nick_command(client_socket, tokens[1]);
 	}
 	else if (command == "PRIVMSG")
 	{
 		std::string recipient = "#test";
 		std::string message = "test";
-		handle_privmsg_command(recipient, message);
+		privmsg_command(recipient, message);
 	}
 	else if (command == "PING")
 	{
@@ -29,64 +28,56 @@ void IrcServer::handle_command(int client_socket, const std::vector<std::string>
 	else if (command == "MODE")
 	{
 		std::string nickname = users_list[client_socket].nickname;
-		handle_mode_command(client_socket, nickname);
+		mode_command(client_socket, nickname);
 	}
 	else if (command == "WHOIS")
 	{
 		std::string nickname = users_list[client_socket].nickname;
-		handle_whois_command(client_socket, nickname);
+		whois_command(client_socket, nickname);
 	}
 	else
 		std::cout << "Unknown command" << std::endl;
 }
 
+bool IrcServer::check_password(const std::string & password, user & current_user)
+{
+	if (password != password_)
+	{
+		send_response(current_user.socket, "464", ":Password incorrect");
+		return false;
+	}
+	if (current_user.authentified == true)
+	{
+		send_response(current_user.socket, "462", ":Already registered");
+		return false;
+	}
+	current_user.authentified = true;
+	return true;
+}
+
 int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std::string> tokens)
 {
-	user current_user;
+	user current_user(client_socket);
 
-	if (tokens.empty())
+	if (tokens.empty() || tokens.size() < 6)// send an error message
 		return -1;
-	
-	for (size_t i = 0; i < tokens.size(); i++)
+	size_t i = 0;
+	if (tokens[i] == "CAP" && tokens[i + 1] == "LS")
+		i += 2;
+	if (token[i] == "PASS" && check_password(tokens[i + 1], current_user))
 	{
-		std::string command = tokens[i];
-		if (command == "CAP" || command == "LS")
-			continue;
-		else if (command == "PASS")
-		{
-			std::string password = tokens[i + 1];
-			if (password == password_)
-			else
-			{
-				send_response(client_socket, "464", "Mot de passe incorrect");
-				return -1;
-			}
-			i++;
-		}
-		else if (!authenticated)
-		{
-			send_response(client_socket, "464", "Mot de passe absent");
+		i += 2;
+		if (tokens[i] != "NICK")// send an error message or change behaviour
 			return -1;
-		}
-		else if (command == "NICK" && tokens.size() > 1 && nickname_set == false)
-		{
-			current_user.nickname = tokens[i + 1];
-			handle_nick_command(client_socket, current_user.nickname);
-			nickname_set = true;
-			i++;
-		}
-		else if (command == "USER" && tokens.size() > 1 && username_set == false)
-		{
-			current_user.username = tokens[i + 5] + tokens[i + 6];
-			handle_user_command(client_socket, current_user.username);
-			username_set = true;
-			i += 6;
-		}
-		else if (nickname_set && username_set)
-			handle_command(client_socket, tokens);
+		nick_command(current_user, tokens[i + 1]);
+		i += 2;
+		if (tokens[i] != "USER" || tokens.size() < i + 6)// send an error message
+			return -1;
+		handle_user_command(current_user, tokens[i + 5] + tokens[i + 6]);
+		users_list.insert(std::pair<int, user>(client_socket, current_user));
+		return 0;
 	}
-	users_list.insert(std::pair<int, user>(client_socket, current_user));
-	return 0;
+	return -1;
 }
 
 int IrcServer::handle_client_connection(int client_socket)
@@ -115,5 +106,5 @@ int IrcServer::handle_client_connection(int client_socket)
 	if (users_list.find(client_socket) == users_list.end())
 		return handle_client_first_connection(client_socket, tokens);
 	else
-		return handle_client_reply(client_socket, tokens);
+		return handle_command(client_socket, tokens);
 }

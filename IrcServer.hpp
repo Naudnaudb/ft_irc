@@ -39,7 +39,7 @@ private:
 
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
-	void handle_command(int client_socket, const std::vector<std::string> &tokens);
+	int handle_command(int client_socket, const std::vector<std::string> &tokens);
 	void nick_command(int client_socket, const std::string &new_nickname);
 	void user_command(int client_socket, const std::string &username);
 	void join_command(int client_socket, const std::string &channel, const std::string &nickname);
@@ -54,6 +54,7 @@ private:
 	void send_message_to_client(int client_socket, const std::string &message);
 	void send_message_to_channel(const std::string &channel, const std::string &message);
 	
+	bool check_password(std::string password);
 	int port_;
 	std::string password_;
 	int server_socket_;
@@ -63,15 +64,26 @@ private:
 	class user
 	{
 	public:
-		user() : nickname(), username(), channels() {}
+		user(const int fd = -1) : nickname(), username(), channels(), authentified(false), socket(fd) {}
+		user(const user &other) : nickname(other.nickname), username(other.username), channels(other.channels), authentified(other.authentified), socket(other.socket) {}
 		std::string					nickname;
 		std::string					username;
 		int							mode; //masque logique
+		bool						authentified;
+		int							socket;
 		std::vector<std::string>	channels;
 	};
 
 	// users list where int parameter is the fd corresponding to the user
 	std::map<int , user> users_list;
+
+	class channel
+	{
+	public:
+		channel(const std::string &name = "") : name(name) {}
+		std::string					name;
+		std::vector<std::string>	users;
+	};
 
 	// bool operator==(const user& lhs, const std::string& rhs);
 	// std::map<int, std::string> client_nicknames_;
