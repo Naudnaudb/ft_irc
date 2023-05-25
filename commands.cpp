@@ -1,3 +1,5 @@
+#include "IrcServer.hpp"
+
 void IrcServer::mode_command(int client_socket, const std::string &nickname)
 {
 	nickname.empty();
