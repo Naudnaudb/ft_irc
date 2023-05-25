@@ -78,10 +78,6 @@ void IrcServer::user_command(int client_socket, const std::string &username)
 	current_user.username = username;
 }
 
-// IrcServer::operator==(const user& current_user, const std::string& nickname){
-// 	return current_user.nickname == nickname;
-// }
-
 void IrcServer::nick_command(int client_socket, const std::string &nickname)
 {
 	// goes there if it is the first connection of user

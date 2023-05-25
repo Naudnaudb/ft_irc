@@ -35,7 +35,6 @@ public:
 private:
 	//	IrcServer.cpp
 	std::vector<std::string> tokenize(const std::string &message);
-	std::set<std::string> get_client_channels(int client_socket);
 
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
@@ -84,11 +83,6 @@ private:
 		std::string					name;
 		std::vector<std::string>	users;
 	};
-
-	// bool operator==(const user& lhs, const std::string& rhs);
-	// std::map<int, std::string> client_nicknames_;
-	// std::map<int, std::string> client_usernames_;
-	// std::map<int, std::set<std::string> > client_channels_;
 };
 
 #endif

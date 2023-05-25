@@ -25,17 +25,6 @@ std::vector<std::string> IrcServer::tokenize(const std::string &message)
 	return tokens;
 }
 
-std::set<std::string> IrcServer::get_client_channels(int client_socket)
-{
-	std::set<std::string> channels;
-
-	std::map<int, std::set<std::string> >::iterator it;
-	for (it = client_channels_.begin(); it != client_channels_.end(); ++it)
-		if (it->first == client_socket)
-			channels.insert(it->second.begin(), it->second.end());
-	return channels;
-}
-
 void IrcServer::poll_client_connections()
 {
 	std::vector<pollfd> fds_to_poll;
