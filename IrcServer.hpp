@@ -39,6 +39,18 @@ private:
 	public:
 		user(const int fd = -1) : nickname(), username(), mode(0), authentified(false), socket(fd), channels() {}
 		user(const user &other) : nickname(other.nickname), username(other.username), mode(other.mode), authentified(other.authentified), socket(other.socket), channels(other.channels) {}
+		user & operator=(const user &rhs) {
+			if (this != &rhs)
+			{
+				nickname = rhs.nickname;
+				username = rhs.username;
+				mode = rhs.mode;
+				authentified = rhs.authentified;
+				socket = rhs.socket;
+				channels = rhs.channels;
+			}
+			return *this;
+		}
 		std::string					nickname;
 		std::string					username;
 		int							mode; //masque logique
