@@ -2,24 +2,22 @@
 
 int IrcServer::handle_command(int client_socket, const std::vector<std::string> &tokens)
 {
+	user current_user(client_socket);
 	std::string command = tokens[0];
 	// std::cout << "Commande reçue : " << command << std::endl;
-	if (command == "JOIN")
+	// if (command == "JOIN")
+	// {
+	// 	std::string channel = tokens[1];
+	// 	join_command(current_user, channel);
+	// }
+	if (command == "NICK")
 	{
-		std::string channel = "#test";
-		std::string nickname = users_list[client_socket].nickname;
-		join_command(client_socket, channel, nickname);
+		nick_command(current_user, tokens[1]);
 	}
-	else if (command == "NICK")
-	{
-		nick_command(client_socket, tokens[1]);
-	}
-	else if (command == "PRIVMSG")
-	{
-		std::string recipient = "#test";
-		std::string message = "test";
-		privmsg_command(recipient, message);
-	}
+	// else if (command == "PRIVMSG")
+	// {
+	// 	privmsg_command(recipient, message);
+	// }
 	else if (command == "PING")
 	{
 		std::string message = "PONG";
@@ -35,8 +33,16 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		std::string nickname = users_list[client_socket].nickname;
 		whois_command(client_socket, nickname);
 	}
+	else if (command == "PART")
+	{
+		part_command(current_user);
+	}
 	else
+	{
 		std::cout << "Unknown command" << std::endl;
+		return -1;
+	}
+	return 0;
 }
 
 bool IrcServer::check_password(const std::string & password, user & current_user)
@@ -64,7 +70,7 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 	size_t i = 0;
 	if (tokens[i] == "CAP" && tokens[i + 1] == "LS")
 		i += 2;
-	if (token[i] == "PASS" && check_password(tokens[i + 1], current_user))
+	if (tokens[i] == "PASS" && check_password(tokens[i + 1], current_user))
 	{
 		i += 2;
 		if (tokens[i] != "NICK")// send an error message or change behaviour
@@ -73,7 +79,7 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 		i += 2;
 		if (tokens[i] != "USER" || tokens.size() < i + 6)// send an error message
 			return -1;
-		handle_user_command(current_user, tokens[i + 5] + tokens[i + 6]);
+		user_command(current_user, tokens[i + 5] + tokens[i + 6]);
 		users_list.insert(std::pair<int, user>(client_socket, current_user));
 		return 0;
 	}

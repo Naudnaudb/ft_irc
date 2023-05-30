@@ -21,13 +21,20 @@ void IrcServer::send_message_to_client(int client_socket, const std::string &mes
 
 void IrcServer::send_message_to_channel(const std::string &channel, const std::string &message)
 {
-	std::set<int> clients;
-	std::map<int, std::set<std::string> >::iterator it;
-	for (it = client_channels_.begin(); it != client_channels_.end(); ++it)
-		if (it->second.count(channel) > 0)
-			clients.insert(it->first);
-
-	std::set<int>::iterator client_it;
-	for (client_it = clients.begin(); client_it != clients.end(); ++client_it)
-		send_message_to_client(*client_it, message);
+	// Parcourir tous les utilisateurs
+	std::map<int, user>::iterator it;
+	for (it = users_list.begin(); it != users_list.end(); ++it)
+	{
+		// Vérifier si l'utilisateur est connecté au canal spécifié
+		std::vector<std::string>::iterator ch_it;
+		for (ch_it = it->second.channels.begin(); ch_it != it->second.channels.end(); ++ch_it)
+		{
+			if (*ch_it == channel)
+			{
+				// Si l'utilisateur est connecté au canal, envoyer le message
+				send_message_to_client(it->first, message);
+				break;
+			}
+		}
+	}
 }

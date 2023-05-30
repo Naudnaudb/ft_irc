@@ -34,16 +34,28 @@ public:
 
 private:
 	//	IrcServer.cpp
+	class user
+	{
+	public:
+		user(const int fd = -1) : nickname(), username(), mode(0), authentified(false), socket(fd), channels() {}
+		user(const user &other) : nickname(other.nickname), username(other.username), mode(other.mode), authentified(other.authentified), socket(other.socket), channels(other.channels) {}
+		std::string					nickname;
+		std::string					username;
+		int							mode; //masque logique
+		bool						authentified;
+		int							socket;
+		std::vector<std::string>	channels;
+	};
 	std::vector<std::string> tokenize(const std::string &message);
 
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
-	void nick_command(int client_socket, const std::string &new_nickname);
-	void user_command(int client_socket, const std::string &username);
-	void join_command(int client_socket, const std::string &channel, const std::string &nickname);
+	void nick_command(user &current_user, const std::string &nickname);
+	void user_command(user &current_user, const std::string &username);
+	void join_command(user &current_user, const std::string &channel);
 	void privmsg_command(const std::string &recipient, const std::string &message);
-	void part_command(int client_socket, const std::string &channel, const std::string &nickname);
+	void part_command(user &current_user);
 	void mode_command(int client_socket, const std::string &nickname);
 	void whois_command(int client_socket, const std::string &nickname);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
@@ -52,26 +64,14 @@ private:
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
 	void send_message_to_channel(const std::string &channel, const std::string &message);
-	
-	bool check_password(std::string password);
+
+	bool check_password(const std::string &password, user &current_user);
 	int port_;
 	std::string password_;
 	int server_socket_;
 	struct sockaddr_in server_address_;
 	struct sockaddr_in client_address_;
 
-	class user
-	{
-	public:
-		user(const int fd = -1) : nickname(), username(), channels(), authentified(false), socket(fd) {}
-		user(const user &other) : nickname(other.nickname), username(other.username), channels(other.channels), authentified(other.authentified), socket(other.socket) {}
-		std::string					nickname;
-		std::string					username;
-		int							mode; //masque logique
-		bool						authentified;
-		int							socket;
-		std::vector<std::string>	channels;
-	};
 
 	// users list where int parameter is the fd corresponding to the user
 	std::map<int , user> users_list;
