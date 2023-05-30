@@ -48,7 +48,7 @@ bool IrcServer::check_password(const std::string & password, user & current_user
 {
 	if (password != password_)
 	{
-		send_response(current_user.socket, "464", ":Password incorrect");
+		send_response(current_user.socket, "464", ":Incorrect Password");
 		return false;
 	}
 	if (current_user.authentified == true)
