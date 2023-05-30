@@ -66,23 +66,19 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 
 	if (tokens.empty() || tokens.size() < 6) // send an error message
 		return -1;
-	std::cout << "COUCOU 1" << std::endl;
 	if (tokens[0] == "CAP" && tokens[1] == "LS")
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
-	std::cout << "COUCOU 2" << std::endl;
 	if (tokens[0] == "PASS" && check_password(tokens[1], current_user))
 	{
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
 		if (tokens[0] != "NICK")// send an error message or change behaviour
 			return -1;
 		nick_command(current_user, tokens[1]);
-		std::cout << "COUCOU 3" << std::endl;
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
 		if (tokens[0] != "USER")// send an error message
 			return -1;
 		user_command(current_user, tokens[1]);
 		users_list.insert(std::pair<int, user>(client_socket, current_user));
-		std::cout << "COUCOU 4" << std::endl;
 		return 0;
 	}
 	return -1;
