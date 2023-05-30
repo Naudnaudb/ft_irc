@@ -82,7 +82,6 @@ void IrcServer::nick_command(user &current_user, const std::string &nickname)
 	}
 
 	// Changer le pseudonyme du client
-	std::cout << "your nickname is: " << current_user.nickname << std::endl;
 	std::string old_nickname = current_user.nickname;
 	current_user.nickname = nickname;
 

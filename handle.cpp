@@ -40,7 +40,6 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	else
 	{
 		std::cout << "Unknown command" << std::endl;
-		return -1;
 	}
 	return 0;
 }
@@ -65,22 +64,25 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 {
 	user current_user(client_socket);
 
-	if (tokens.empty() || tokens.size() < 6)// send an error message
+	if (tokens.empty() || tokens.size() < 6) // send an error message
 		return -1;
-	size_t i = 0;
-	if (tokens[i] == "CAP" && tokens[i + 1] == "LS")
-		i += 2;
-	if (tokens[i] == "PASS" && check_password(tokens[i + 1], current_user))
+	std::cout << "COUCOU 1" << std::endl;
+	if (tokens[0] == "CAP" && tokens[1] == "LS")
+		tokens.erase(tokens.begin(), tokens.begin() + 2);
+	std::cout << "COUCOU 2" << std::endl;
+	if (tokens[0] == "PASS" && check_password(tokens[1], current_user))
 	{
-		i += 2;
-		if (tokens[i] != "NICK")// send an error message or change behaviour
+		tokens.erase(tokens.begin(), tokens.begin() + 2);
+		if (tokens[0] != "NICK")// send an error message or change behaviour
 			return -1;
-		nick_command(current_user, tokens[i + 1]);
-		i += 2;
-		if (tokens[i] != "USER" || tokens.size() < i + 6)// send an error message
+		nick_command(current_user, tokens[1]);
+		std::cout << "COUCOU 3" << std::endl;
+		tokens.erase(tokens.begin(), tokens.begin() + 2);
+		if (tokens[0] != "USER")// send an error message
 			return -1;
-		user_command(current_user, tokens[i + 5] + tokens[i + 6]);
+		user_command(current_user, tokens[1]);
 		users_list.insert(std::pair<int, user>(client_socket, current_user));
+		std::cout << "COUCOU 4" << std::endl;
 		return 0;
 	}
 	return -1;
@@ -108,6 +110,10 @@ int IrcServer::handle_client_connection(int client_socket)
 	if (message.empty())
 		return -1;
 	std::vector<std::string> tokens = tokenize(message);
+	// afficher tout les tokens
+	for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); ++it)
+		std::cout << *it << std::endl;
+	
 	// check if the client is new
 	if (users_list.find(client_socket) == users_list.end())
 		return handle_client_first_connection(client_socket, tokens);
