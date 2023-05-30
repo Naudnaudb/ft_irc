@@ -37,7 +37,12 @@ private:
 	class user
 	{
 	public:
-		user(const int fd = -1) : nickname(), username(), mode(0), authentified(false), socket(fd), channels() {}
+		user(const int fd = -1) : nickname(), username(), authentified(false), socket(fd), channels() {
+			mode['i'] = false;
+			mode['t'] = false;
+			mode['k'] = false;
+			mode['o'] = false;
+		}
 		user(const user &other) : nickname(other.nickname), username(other.username), mode(other.mode), authentified(other.authentified), socket(other.socket), channels(other.channels) {}
 		user & operator=(const user &rhs) {
 			if (this != &rhs)
@@ -53,7 +58,7 @@ private:
 		}
 		std::string					nickname;
 		std::string					username;
-		int							mode; //masque logique
+		std::map<char, bool>		mode; // char = cle (i, t, k, o) & bool = false/true (0, 1)
 		bool						authentified;
 		int							socket;
 		std::vector<std::string>	channels;
