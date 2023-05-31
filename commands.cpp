@@ -1,10 +1,94 @@
 #include "IrcServer.hpp"
 
-void IrcServer::mode_command(int client_socket, const std::string &nickname)
+int to_int(char const *s)
 {
-	nickname.empty();
-	std::string message = "You are in invisible mode";
-	send_response(client_socket, "MODE", message);
+	if ( s == NULL || *s == '\0' )
+		throw std::invalid_argument("null or empty string argument");
+	if ( *s == '-' )
+		throw std::invalid_argument("positive integer only.");
+
+	if ( *s == '+' ) 
+		++s;
+
+	int result = 0;
+	while(*s)
+	{
+		if ( *s < '0' || *s > '9' )
+			throw std::invalid_argument("invalid input string");
+		result = result * 10  - (*s - '0');
+		++s;
+	}
+	if (result < 0)
+		throw std::invalid_argument("positive integer only.");
+	return result;
+}
+
+void IrcServer::mode_command(int client_socket, const std::vector<std::string> &tokens, user current_user)
+{
+	if (tokens.size() < 3)
+		return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+	channel channel_t_w_change = tokens[1];
+	std::string mode = tokens[2];
+	if (mode[0] == '+')
+	{
+		if (mode[1] == 'i')
+			channel_t_w_change.mode['i'] = true;
+		else if (mode[1] == 't')
+			channel_t_w_change.mode['t'] = true;
+		else if (mode[1] == 'k')
+		{
+			if (tokens.size() != 4)
+				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+			channel_t_w_change.mode['k'] = true;
+			channel_t_w_change.key = tokens[3];
+		}
+		else if (mode[1] == 'o')
+		{
+			if (tokens.size() != 4)
+				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+			channel_t_w_change.mode['o'] = true;
+			current_user.channels[channel_t_w_change.name] = true;
+		}
+		else if (mode[1] == 'l')
+		{
+			if (tokens.size() != 4)
+				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+			channel_t_w_change.mode['l'] = true;
+			int i = to_int(tokens[3].c_str());
+			channel_t_w_change.user_limit = i;
+		}
+	}
+	else if (mode[0] == '-')
+	{
+		if (mode[1] == 'i')
+			channel_t_w_change.mode['i'] = false;
+		else if (mode[1] == 't')
+			channel_t_w_change.mode['t'] = false;
+		else if (mode[1] == 'k')
+		{
+			if (tokens.size() != 4)
+				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+			channel_t_w_change.mode['k'] = false;
+			channel_t_w_change.key = "";
+		}
+		else if (mode[1] == 'o')
+		{
+			if (tokens.size() != 4)
+				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+			channel_t_w_change.mode['o'] = false;
+			current_user.channels[channel_t_w_change.name] = false;
+		}
+		else if (mode[1] == 'l')
+		{
+			channel_t_w_change.mode['l'] = false;
+			channel_t_w_change.user_limit = __INT_MAX__;
+		}
+	}
+	else
+	{
+		send_response(client_socket, "472", "ERR_UNKNOWNMODE");
+		return;
+	}
 }
 
 void IrcServer::whois_command(int client_socket, const std::string &nickname)
