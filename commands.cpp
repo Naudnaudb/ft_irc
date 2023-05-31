@@ -98,37 +98,19 @@ void IrcServer::whois_command(int client_socket, const std::string &nickname)
 	send_response(client_socket, "WHOIS", message);
 }
 
-// void IrcServer::join_command(user &current_user, const std::string &channel)
-// {
-// 	// ajouter join
-// }
+void IrcServer::join_command(user &current_user, const std::string &channel)
+{
+	// ajouter join
+}
 
-// void IrcServer::privmsg_command(const std::string &recipient, const std::string &message)
-// {
-// 	// ajouter privmsg
-// }
+void IrcServer::privmsg_command(const std::string &recipient, const std::string &message)
+{
+	// ajouter privmsg
+}
 
 void IrcServer::part_command(user &current_user)
 {
-	// Vérifier si l'utilisateur est dans un canal
-	if (!current_user.channels.empty())
-	{
-		// Prendre le dernier canal de la liste des canaux du client
-		std::string channel = current_user.channels.back();
-
-		// Supprimer le canal de la liste des canaux du client
-		current_user.channels.pop_back();
-
-		// Envoyer un message de départ aux autres clients du canal
-		std::string goodbye_message = current_user.nickname + " left the channel " + channel;
-		send_message_to_channel(channel, goodbye_message);
-	}
-	else
-	{
-		// Envoyer un message indiquant que le client n'est pas dans un canal
-		std::string error_message = "You're not in any channel";
-		send_message_to_client(current_user.socket, error_message);
-	}
+	// add part
 }
 
 void IrcServer::user_command(user &current_user, const std::string &username)
