@@ -68,6 +68,7 @@ private:
 			user_limit = __INT_MAX__;
 		}
 		std::string					name;
+		std::string					topic;
 		std::vector<std::string>	users;
 		std::map<char, bool>		mode; // char = cle (i, t, k, o, l) & bool = false/true (0, 1)
 		std::string					key;
@@ -81,10 +82,10 @@ private:
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
 	void nick_command(user &current_user, const std::string &nickname);
 	void user_command(user &current_user, const std::string &username);
-	void join_command(user &current_user, const std::string &channel);
-	void privmsg_command(const std::string &recipient, const std::string &message);
+	void join_command(user &current_user, const std::string &channel_name);
+	void privmsg_command(user &current_user, const std::string &recipient, const std::string &message);
 	void part_command(user &current_user);
-	void mode_command(int client_socket, const std::vector<std::string> &tokens, user current_user);
+	void mode_command(int client_socket, const std::vector<std::string> &tokens, user &current_user);
 	void whois_command(int client_socket, const std::string &nickname);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
 	
