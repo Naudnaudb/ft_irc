@@ -130,7 +130,7 @@ void IrcServer::privmsg_command(user &current_user, const std::string &recipient
     {
         std::string channel_name = recipient.substr(1);
         std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PRIVMSG #" + channel_name + " :" + message;
-        send_message_to_channel(channel_name, formatted_message, current_user.socket);
+        send_message_to_channel(channel_name, formatted_message);
     }
     // Sinon, envoyer le message au destinataire spécifié
     else
