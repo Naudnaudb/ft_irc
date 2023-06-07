@@ -127,7 +127,7 @@ void IrcServer::privmsg_command(user &current_user, const std::string &target, c
 	{
 		// Envoyer le message à tous les utilisateurs connectés au canal
 		std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PRIVMSG " + target + " :" + message;
-		send_message_to_channel(target, formatted_message);
+		send_message_to_channel_except(target, formatted_message, current_user.nickname);
 	}
 	else
 	{
