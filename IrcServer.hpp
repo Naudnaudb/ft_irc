@@ -20,6 +20,7 @@
 # include <set>
 # include <sstream>
 # include <algorithm>
+# include <string>
 
 # define MAX_CLIENTS 100
 # define SERVER_NAME "ft_ircserv.fr"
@@ -89,6 +90,8 @@ private:
 	void mode_command(int client_socket, const std::vector<std::string> &tokens, user &current_user);
 	void whois_command(int client_socket, const std::string &nickname);
 	void quit_command(user &current_user, const std::string &message);
+	void who_command(user &current_user, const std::string &channel_name);
+	void names_command(user &current_user, const std::string &channel_name);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
 	
 	//	send.cpp

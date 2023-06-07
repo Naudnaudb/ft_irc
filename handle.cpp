@@ -25,6 +25,10 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		part_command(current_user, tokens[1]);
 	else if (command == "QUIT")
 		quit_command(current_user, tokens[1]);
+	else if (command == "WHO")
+		who_command(current_user, tokens[1]);
+	else if (command == "NAMES")
+		names_command(current_user, tokens[1]);
 	else
 		std::cout << "Unknown command" << std::endl;
 	return 0;
