@@ -2,74 +2,74 @@
 
 void IrcServer::mode_command(int client_socket, const std::vector<std::string> &tokens, user &current_user)
 {
-	if (tokens.size() < 3)
-		return (send_response(client_socket, "461", "This command needs at least 2 parameters : channel and the mode to change"));
-	channel channel_t_w_change = tokens[1];
-	std::string mode = tokens[2];
-	if (mode[0] == '+')
-	{
-		if (mode[1] == 'i')
-			channel_t_w_change.mode['i'] = true;
-		else if (mode[1] == 't')
-			channel_t_w_change.mode['t'] = true;
-		else if (mode[1] == 'k')
-		{
-			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "This option needs a parameter"));
-			channel_t_w_change.mode['k'] = true;
-			channel_t_w_change.key = tokens[3];
-		}
-		else if (mode[1] == 'o')
-		{
-			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "This option needs a parameter"));
-			channel_t_w_change.mode['o'] = true;
-			current_user.channels[channel_t_w_change.name] = true;
-		}
-		else if (mode[1] == 'l')
-		{
-			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "This option needs a parameter"));
+    if (tokens.size() < 3)
+        return (send_response(client_socket, "461", "This command needs at least 2 parameters : channel and the mode to change"));
+    channel channel_t_w_change = tokens[1];
+    std::string mode = tokens[2];
+    if (mode[0] == '+')
+    {
+        if (mode[1] == 'i')
+            channel_t_w_change.mode['i'] = true;
+        else if (mode[1] == 't')
+            channel_t_w_change.mode['t'] = true;
+        else if (mode[1] == 'k')
+        {
+            if (tokens.size() != 4)
+                return (send_response(client_socket, "461", "This option needs a parameter"));
+            channel_t_w_change.mode['k'] = true;
+            channel_t_w_change.key = tokens[3];
+        }
+        else if (mode[1] == 'o')
+        {
+            if (tokens.size() != 4)
+                return (send_response(client_socket, "461", "This option needs a parameter"));
+            channel_t_w_change.mode['o'] = true;
+            current_user.channels[channel_t_w_change.name] = true;
+        }
+        else if (mode[1] == 'l')
+        {
+            if (tokens.size() != 4)
+                return (send_response(client_socket, "461", "This option needs a parameter"));
 
-			channel_t_w_change.mode['l'] = true;
-			int i = atoi(tokens[3].c_str());
-			if (i > 1)
-				channel_t_w_change.user_limit = i;
-			else
-				return (send_response(client_socket, "461", "Last parameter must be > 1"));
-		}
-	}
-	else if (mode[0] == '-')
-	{
-		if (mode[1] == 'i')
-			channel_t_w_change.mode['i'] = false;
-		else if (mode[1] == 't')
-			channel_t_w_change.mode['t'] = false;
-		else if (mode[1] == 'k')
-		{
-			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "This option needs a parameter"));
-			channel_t_w_change.mode['k'] = false;
-			channel_t_w_change.key = "";
-		}
-		else if (mode[1] == 'o')
-		{
-			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "This option needs a parameter"));
-			channel_t_w_change.mode['o'] = false;
-			current_user.channels[channel_t_w_change.name] = false;
-		}
-		else if (mode[1] == 'l')
-		{
-			channel_t_w_change.mode['l'] = false;
-			channel_t_w_change.user_limit = __INT_MAX__;
-		}
-	}
-	else
-	{
-		send_response(client_socket, "472", "Unknown mode");
-		return;
-	}
+            channel_t_w_change.mode['l'] = true;
+            int i = atoi(tokens[3].c_str());
+            if (i > 1)
+                channel_t_w_change.user_limit = i;
+            else
+                return (send_response(client_socket, "461", "Last parameter must be > 1"));
+        }
+    }
+    else if (mode[0] == '-')
+    {
+        if (mode[1] == 'i')
+            channel_t_w_change.mode['i'] = false;
+        else if (mode[1] == 't')
+            channel_t_w_change.mode['t'] = false;
+        else if (mode[1] == 'k')
+        {
+            if (tokens.size() != 4)
+                return (send_response(client_socket, "461", "This option needs a parameter"));
+            channel_t_w_change.mode['k'] = false;
+            channel_t_w_change.key = "";
+        }
+        else if (mode[1] == 'o')
+        {
+            if (tokens.size() != 4)
+                return (send_response(client_socket, "461", "This option needs a parameter"));
+            channel_t_w_change.mode['o'] = false;
+            current_user.channels[channel_t_w_change.name] = false;
+        }
+        else if (mode[1] == 'l')
+        {
+            channel_t_w_change.mode['l'] = false;
+            channel_t_w_change.user_limit = __INT_MAX__;
+        }
+    }
+    else
+    {
+        send_response(client_socket, "472", "Unknown mode");
+        return;
+    }
 }
 
 void IrcServer::whois_command(int client_socket, const std::string &nickname)
@@ -82,14 +82,14 @@ void IrcServer::whois_command(int client_socket, const std::string &nickname)
 void IrcServer::join_command(user &current_user, const std::string &channel_name)
 {
     // Vérifier si le canal existe déjà
-    std::map<std::string, channel>::iterator it = channels.find(channel_name);
-    if (it == channels.end())
+    std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+    if (it == channels_list.end())
     {
         // Si le canal n'existe pas, le créer
         channel new_channel;
         new_channel.name = channel_name;
         new_channel.users.push_back(current_user.nickname);
-        channels[channel_name] = new_channel;
+        channels_list[channel_name] = new_channel;
         std::string formatted_message = current_user.nickname + " " + channel_name + " :" + new_channel.topic;
         send_response(current_user.socket, "332", formatted_message);
     }
@@ -104,8 +104,8 @@ void IrcServer::join_command(user &current_user, const std::string &channel_name
     send_message_to_channel(channel_name, formatted_message);
 
     // Envoyer la liste des utilisateurs du canal à l'utilisateur
-    std::map<std::string, channel>::iterator it2 = channels.find(channel_name);
-    if (it2 != channels.end())
+    std::map<std::string, channel>::iterator it2 = channels_list.find(channel_name);
+    if (it2 != channels_list.end())
     {
         formatted_message = ":" + std::string(SERVER_NAME) + " 353 " + current_user.nickname + " = " + channel_name + " :";
         for (std::vector<std::string>::iterator user_it = it2->second.users.begin(); user_it != it2->second.users.end(); ++user_it)
@@ -153,9 +153,36 @@ void IrcServer::privmsg_command(user &current_user, const std::string &recipient
     }
 }
 
-void IrcServer::part_command(user &current_user)
+void IrcServer::part_command(user &current_user, const std::string &channel_name)
 {
-	// add part
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+	if (it == channels_list.end())
+	{
+		send_response(current_user.socket, "403", channel_name + " :No such channel");
+		return;
+	}
+
+	// Vérifier si l'utilisateur est connecté au canal
+	bool user_found = false;
+	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
+	{
+		if (*user_it == current_user.nickname)
+		{
+			user_found = true;
+			it->second.users.erase(user_it);
+			break;
+		}
+	}
+	if (!user_found)
+	{
+		send_response(current_user.socket, "442", channel_name + " :You're not on that channel");
+		return;
+	}
+
+	// Envoyer un message de départ à tous les utilisateurs connectés au canal
+	std::string formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " PART " + channel_name;
+	send_message_to_channel(channel_name, formatted_message);
 }
 
 void IrcServer::user_command(user &current_user, const std::string &username)

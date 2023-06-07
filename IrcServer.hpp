@@ -19,6 +19,7 @@
 # include <map>
 # include <set>
 # include <sstream>
+# include <algorithm>
 
 # define MAX_CLIENTS 100
 # define SERVER_NAME "ft_ircserv.fr"
@@ -84,7 +85,7 @@ private:
 	void user_command(user &current_user, const std::string &username);
 	void join_command(user &current_user, const std::string &channel_name);
 	void privmsg_command(user &current_user, const std::string &recipient, const std::string &message);
-	void part_command(user &current_user);
+	void part_command(user &current_user, const std::string &channel_name);
 	void mode_command(int client_socket, const std::vector<std::string> &tokens, user &current_user);
 	void whois_command(int client_socket, const std::string &nickname);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
@@ -104,7 +105,7 @@ private:
 
 	// users list where int parameter is the fd corresponding to the user
 	std::map<int , user> users_list;
-
+	std::map<std::string, channel> channels_list;
 };
 
 #endif

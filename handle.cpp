@@ -5,16 +5,16 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	user current_user = users_list[client_socket];
 	std::string nickname = users_list[client_socket].nickname;
 	std::string command = tokens[0];
-	// std::cout << "Commande reçue : " << command << std::endl;
-	// if (command == "JOIN")
-	// {
-	// 	std::string channel = tokens[1];
-	// 	join_command(current_user, channel);
-	// }
-	if (command == "NICK")
+	std::cout << "Commande reçue : " << command << std::endl;
+	if (command == "JOIN")
+	{
+		std::string channel = tokens[1];
+		join_command(current_user, channel);
+	}
+	else if (command == "NICK")
 		nick_command(current_user, tokens[1]);
-	// else if (command == "PRIVMSG")
-	// 	privmsg_command(recipient, message);
+	else if (command == "PRIVMSG")
+		privmsg_command(current_user, tokens[1], tokens[2]);
 	else if (command == "PING")
 		send_message_to_client(client_socket, "PONG");
 	else if (command == "MODE")
@@ -22,7 +22,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	else if (command == "WHOIS")
 		whois_command(client_socket, nickname);
 	else if (command == "PART")
-		part_command(current_user);
+		part_command(current_user, tokens[1]);
 	else
 		std::cout << "Unknown command" << std::endl;
 	return 0;
