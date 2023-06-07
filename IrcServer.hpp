@@ -88,12 +88,14 @@ private:
 	void part_command(user &current_user, const std::string &channel_name);
 	void mode_command(int client_socket, const std::vector<std::string> &tokens, user &current_user);
 	void whois_command(int client_socket, const std::string &nickname);
+	void quit_command(user &current_user, const std::string &message);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
 	void send_message_to_channel(const std::string &channel, const std::string &message);
+	void send_message_to_all(const std::string& message);
 
 	bool check_password(const std::string &password, user &current_user);
 	int port_;

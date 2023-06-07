@@ -229,3 +229,16 @@ void IrcServer::nick_command(user &current_user, const std::string &nickname)
 	else
 		send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Your nickname has change from " + old_nickname + " to " + nickname);
 }
+
+void IrcServer::quit_command(user &current_user, const std::string &message)
+{
+    // Envoyer un message de départ à tous les utilisateurs connectés au canal
+    std::string formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " QUIT :" + message;
+    send_message_to_all(formatted_message);
+
+    // Fermer la socket de l'utilisateur
+    shutdown(current_user.socket, SHUT_RDWR);
+
+    // Supprimer l'utilisateur de la liste des utilisateurs connectés
+    users_list.erase(current_user.socket);
+}

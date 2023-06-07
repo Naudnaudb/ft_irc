@@ -23,6 +23,8 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		whois_command(client_socket, nickname);
 	else if (command == "PART")
 		part_command(current_user, tokens[1]);
+	else if (command == "QUIT")
+		quit_command(current_user, tokens[1]);
 	else
 		std::cout << "Unknown command" << std::endl;
 	return 0;

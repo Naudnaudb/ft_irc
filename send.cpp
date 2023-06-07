@@ -32,3 +32,13 @@ void IrcServer::send_message_to_channel(const std::string& channel, const std::s
 		}
 	}
 }
+
+void IrcServer::send_message_to_all(const std::string& message)
+{
+	// Parcourir tous les utilisateurs
+	for (std::map<int, user>::iterator it = users_list.begin(); it != users_list.end(); ++it)
+	{
+		// Envoyer le message à l'utilisateur
+		send_message_to_client(it->second.socket, message);
+	}
+}
