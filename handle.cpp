@@ -22,7 +22,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	else if (command == "WHOIS")
 		whois_command(client_socket, nickname);
 	else if (command == "PART")
-		part_command(current_user);
+		part_command(current_user, tokens);
 	else
 		std::cout << "Unknown command" << std::endl;
 	return 0;
@@ -40,7 +40,6 @@ bool IrcServer::check_password(const std::string & password, user & current_user
 		send_response(current_user.socket, "462", ":Already registered");
 		return false;
 	}
-	current_user.authentified = true;
 	return true;
 }
 
@@ -55,14 +54,14 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 	if (tokens[0] == "PASS" && check_password(tokens[1], current_user))
 	{
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
-		if (tokens[0] != "NICK")// send an error message or change behaviour
+		if (tokens[0] != "NICK" || nick_command(current_user, tokens[1]) == -1)// send an error message or change behaviour
 			return -1;
-		nick_command(current_user, tokens[1]);
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
-		if (tokens[0] != "USER")// send an error message
+		if (tokens[0] != "USER" || user_command(current_user, tokens) == -1)// send an error message
 			return -1;
-		user_command(current_user, tokens[1]);
+		current_user.authentified = true;
 		users_list.insert(std::pair<int, user>(client_socket, current_user));
+		send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + current_user.nickname + " :Welcome to the server " + SERVER_NAME + ", " + current_user.nickname + " !");
 		return 0;
 	}
 	return -1;

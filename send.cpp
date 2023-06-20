@@ -19,22 +19,29 @@ void IrcServer::send_message_to_client(int client_socket, const std::string &mes
 		std::cerr << "Error: sending message to client (socket: " << client_socket << "): " << strerror(errno) << std::endl;
 }
 
-void IrcServer::send_message_to_channel(const std::string &channel, const std::string &message)
+void IrcServer::send_message_to_channel(channel &current_channel, const std::string &message)
 {
 	// Parcourir tous les utilisateurs
-	std::map<int, user>::iterator it;
-	for (it = users_list.begin(); it != users_list.end(); ++it)
-	{
-		// Vérifier si l'utilisateur est connecté au canal spécifié
-		std::vector<std::string>::iterator ch_it;
-		for (ch_it = it->second.channels.begin(); ch_it != it->second.channels.end(); ++ch_it)
-		{
-			if (*ch_it == channel)
-			{
-				// Si l'utilisateur est connecté au canal, envoyer le message
-				send_message_to_client(it->first, message);
-				break;
-			}
-		}
-	}
+	for (std::vector<user>::iterator it = current_channel.users.begin(); it != current_channel.users.end(); ++it)
+		send_message_to_client(it->socket, message);
 }
+
+// void IrcServer::send_message_to_channel(const std::string &channel, const std::string &message)
+// {
+// 	// Parcourir tous les utilisateurs
+// 	std::map<int, user>::iterator it;
+// 	for (it = users_list.begin(); it != users_list.end(); ++it)
+// 	{
+// 		// Vérifier si l'utilisateur est connecté au canal spécifié
+// 		std::vector<std::string>::iterator ch_it;
+// 		for (ch_it = it->second.channels.begin(); ch_it != it->second.channels.end(); ++ch_it)
+// 		{
+// 			if (*ch_it == channel)
+// 			{
+// 				// Si l'utilisateur est connecté au canal, envoyer le message
+// 				send_message_to_client(it->first, message);
+// 				break;
+// 			}
+// 		}
+// 	}
+// }

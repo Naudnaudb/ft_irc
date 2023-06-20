@@ -52,6 +52,7 @@ private:
 		}
 		std::string					nickname;
 		std::string					username;
+		std::string					realname;
 		bool						authentified;
 		int							socket;
 		std::map<std::string, bool>	channels;
@@ -68,7 +69,7 @@ private:
 			user_limit = __INT_MAX__;
 		}
 		std::string					name;
-		std::vector<std::string>	users;
+		std::vector<user>			users;
 		std::map<char, bool>		mode; // char = cle (i, t, k, o, l) & bool = false/true (0, 1)
 		std::string					key;
 		int							user_limit;
@@ -79,11 +80,11 @@ private:
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
-	void nick_command(user &current_user, const std::string &nickname);
-	void user_command(user &current_user, const std::string &username);
+	int nick_command(user &current_user, const std::string &nickname);
+	int user_command(user &current_user, const std::vector<std::string> &tokens);
 	void join_command(user &current_user, const std::string &channel);
 	void privmsg_command(const std::string &recipient, const std::string &message);
-	void part_command(user &current_user);
+	void part_command(user &current_user, const std::vector<std::string> &tokens);
 	void mode_command(int client_socket, const std::vector<std::string> &tokens, user current_user);
 	void whois_command(int client_socket, const std::string &nickname);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
@@ -91,7 +92,7 @@ private:
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
-	void send_message_to_channel(const std::string &channel, const std::string &message);
+	void send_message_to_channel(channel &current_channel, const std::string &message);
 
 	bool check_password(const std::string &password, user &current_user);
 	int port_;
@@ -103,7 +104,11 @@ private:
 
 	// users list where int parameter is the fd corresponding to the user
 	std::map<int , user> users_list;
+	std::map<std::string, channel> channels_list;
 
 };
+
+// utils.cpp
+std::vector<std::string>	split(std::string s, std::string delimiter);
 
 #endif
