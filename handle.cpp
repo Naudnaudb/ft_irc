@@ -45,6 +45,7 @@ bool IrcServer::check_password(const std::string & password, user & current_user
 
 int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std::string> tokens)
 {
+	std::cout << "New client connected" << std::endl;
 	user current_user(client_socket);
 
 	if (tokens.empty() || tokens.size() < 6) // send an error message
@@ -73,7 +74,7 @@ int IrcServer::handle_client_connection(int client_socket)
 
 	socklen_t client_address_length = sizeof(client_address_);
 	getpeername(client_socket, (struct sockaddr *)&client_address_, &client_address_length);
-	std::cout << "New incoming connection : " << inet_ntoa(client_address_.sin_addr) << std::endl;
+	std::cout << "message recieved from : " << inet_ntoa(client_address_.sin_addr) << std::endl;
 
 	char buffer[4096];
 	int bytes_received = recv(client_socket, buffer, 4096, 0);
@@ -95,7 +96,13 @@ int IrcServer::handle_client_connection(int client_socket)
 	
 	// check if the client is new
 	if (users_list.find(client_socket) == users_list.end())
-		return handle_client_first_connection(client_socket, tokens);
+	{
+		int a = handle_client_first_connection(client_socket, tokens);
+		std::cout << "nick : " << users_list[client_socket].nickname << std::endl;
+		std::cout << "user : " << users_list[client_socket].username << std::endl;
+		std::cout << "real : " << users_list[client_socket].realname << std::endl;
+		return a;
+	}
 	else
 		return handle_command(client_socket, tokens);
 }

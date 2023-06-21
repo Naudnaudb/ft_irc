@@ -25,6 +25,9 @@ int to_int(char const *s)
 
 void IrcServer::mode_command(int client_socket, const std::vector<std::string> &tokens, user current_user)
 {
+	std::string message = "You are in invisible mode";
+	send_response(client_socket, "MODE", message);
+	return;
 	if (tokens.size() < 3)
 		return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
 	channel channel_t_w_change = tokens[1];
@@ -178,7 +181,11 @@ int IrcServer::user_command(user &current_user, const std::vector<std::string> &
 		return -1;
 	}
 	current_user.username = tokens[1];
+	// remove ':' from realname and concatenate all tokens
 	current_user.realname = tokens[4];
+	for (size_t i = 5; i < tokens.size(); ++i)
+		current_user.realname += " " + tokens[i];
+	current_user.realname.erase(0, 1);
 	return (0);
 }
 

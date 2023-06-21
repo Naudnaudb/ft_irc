@@ -37,13 +37,14 @@ private:
 	class user
 	{
 	public:
-		user(const int fd = -1) : nickname(), username(), authentified(false), socket(fd), channels() {}
-		user(const user &other) : nickname(other.nickname), username(other.username), authentified(other.authentified), socket(other.socket), channels(other.channels) {}
+		user(const int fd = -1) : nickname(), username(), realname(), authentified(false), socket(fd), channels() {}
+		user(const user &other) : nickname(other.nickname), username(other.username), realname(other.realname), authentified(other.authentified), socket(other.socket), channels(other.channels) {}
 		user & operator=(const user &rhs) {
 			if (this != &rhs)
 			{
 				nickname = rhs.nickname;
 				username = rhs.username;
+				realname = rhs.realname;
 				authentified = rhs.authentified;
 				socket = rhs.socket;
 				channels = rhs.channels;
