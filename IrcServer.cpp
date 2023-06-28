@@ -46,7 +46,6 @@ void IrcServer::poll_client_connections()
 		{
 			if (fds_to_poll[i].revents & POLLIN)
 			{
-				std::cout << "fds_to_poll size() = " << fds_to_poll.size() << std::endl;
 				if (fds_to_poll[i].fd == server_socket_)
 				{
 					// Accepter une connexion entrante
@@ -75,7 +74,6 @@ void IrcServer::poll_client_connections()
 					// Supprimer le client_socket du pollfd s'il est fermé
 					if (client_state == OFFLINE)
 					{
-						std::cout << "OFFLINE" << std::endl;
 						close(fds_to_poll[i].fd);
 						fds_to_poll.erase(fds_to_poll.begin() + i);
 						--i;

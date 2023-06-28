@@ -5,16 +5,16 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	user current_user = users_list[client_socket];
 	std::string nickname = users_list[client_socket].nickname;
 	std::string command = tokens[0];
-	// std::cout << "Commande reçue : " << command << std::endl;
-	// if (command == "JOIN")
-	// {
-	// 	std::string channel = tokens[1];
-	// 	join_command(current_user, channel);
-	// }
-	if (command == "NICK")
+	std::cout << "Commande reçue : " << command << std::endl;
+	if (command == "JOIN")
+	{
+		std::string channel = tokens[1];
+		join_command(current_user, channel);
+	}
+	else if (command == "NICK")
 		nick_command(current_user, tokens[1]);
-	// else if (command == "PRIVMSG")
-	// 	privmsg_command(recipient, message);
+	else if (command == "PRIVMSG")
+		privmsg_command(current_user, tokens[1], tokens[2]);
 	else if (command == "PING")
 		send_message_to_client(client_socket, "PONG");
 	else if (command == "MODE")
@@ -22,7 +22,13 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	else if (command == "WHOIS")
 		whois_command(client_socket, nickname);
 	else if (command == "PART")
-		part_command(current_user, tokens);
+		part_command(current_user, tokens[1]);
+	else if (command == "QUIT")
+		quit_command(current_user, tokens[1]);
+	else if (command == "WHO")
+		who_command(current_user, tokens[1]);
+	else if (command == "NAMES")
+		names_command(current_user, tokens[1]);
 	else
 		std::cout << "Unknown command" << std::endl;
 	return 0;
@@ -40,12 +46,12 @@ bool IrcServer::check_password(const std::string & password, user & current_user
 		send_response(current_user.socket, "462", ":Already registered");
 		return false;
 	}
+	current_user.authentified = true;
 	return true;
 }
 
 int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std::string> tokens)
 {
-	std::cout << "New client connected" << std::endl;
 	user current_user(client_socket);
 
 	if (tokens.empty() || tokens.size() < 6) // send an error message
@@ -55,14 +61,14 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 	if (tokens[0] == "PASS" && check_password(tokens[1], current_user))
 	{
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
-		if (tokens[0] != "NICK" || nick_command(current_user, tokens[1]) == -1)// send an error message or change behaviour
+		if (tokens[0] != "NICK")// send an error message or change behaviour
 			return -1;
+		nick_command(current_user, tokens[1]);
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
-		if (tokens[0] != "USER" || user_command(current_user, tokens) == -1)// send an error message
+		if (tokens[0] != "USER")// send an error message
 			return -1;
-		current_user.authentified = true;
+		user_command(current_user, tokens[1]);
 		users_list.insert(std::pair<int, user>(client_socket, current_user));
-		send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + current_user.nickname + " :Welcome to the server " + SERVER_NAME + ", " + current_user.nickname + " !");
 		return 0;
 	}
 	return -1;
@@ -74,7 +80,7 @@ int IrcServer::handle_client_connection(int client_socket)
 
 	socklen_t client_address_length = sizeof(client_address_);
 	getpeername(client_socket, (struct sockaddr *)&client_address_, &client_address_length);
-	std::cout << "message recieved from : " << inet_ntoa(client_address_.sin_addr) << std::endl;
+	std::cout << "New incoming connection : " << inet_ntoa(client_address_.sin_addr) << std::endl;
 
 	char buffer[4096];
 	int bytes_received = recv(client_socket, buffer, 4096, 0);
@@ -96,13 +102,7 @@ int IrcServer::handle_client_connection(int client_socket)
 	
 	// check if the client is new
 	if (users_list.find(client_socket) == users_list.end())
-	{
-		int a = handle_client_first_connection(client_socket, tokens);
-		std::cout << "nick : " << users_list[client_socket].nickname << std::endl;
-		std::cout << "user : " << users_list[client_socket].username << std::endl;
-		std::cout << "real : " << users_list[client_socket].realname << std::endl;
-		return a;
-	}
+		return handle_client_first_connection(client_socket, tokens);
 	else
 		return handle_command(client_socket, tokens);
 }

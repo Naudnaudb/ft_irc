@@ -1,35 +1,9 @@
 #include "IrcServer.hpp"
 
-int to_int(char const *s)
+void IrcServer::mode_command(int client_socket, const std::vector<std::string> &tokens, user &current_user)
 {
-	if ( s == NULL || *s == '\0' )
-		throw std::invalid_argument("null or empty string argument");
-	if ( *s == '-' )
-		throw std::invalid_argument("positive integer only.");
-
-	if ( *s == '+' ) 
-		++s;
-
-	int result = 0;
-	while(*s)
-	{
-		if ( *s < '0' || *s > '9' )
-			throw std::invalid_argument("invalid input string");
-		result = result * 10  - (*s - '0');
-		++s;
-	}
-	if (result < 0)
-		throw std::invalid_argument("positive integer only.");
-	return result;
-}
-
-void IrcServer::mode_command(int client_socket, const std::vector<std::string> &tokens, user current_user)
-{
-	std::string message = "You are in invisible mode";
-	send_response(client_socket, "MODE", message);
-	return;
 	if (tokens.size() < 3)
-		return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+		return (send_response(client_socket, "461", "This command needs at least 2 parameters : channel and the mode to change"));
 	channel channel_t_w_change = tokens[1];
 	std::string mode = tokens[2];
 	if (mode[0] == '+')
@@ -41,24 +15,28 @@ void IrcServer::mode_command(int client_socket, const std::vector<std::string> &
 		else if (mode[1] == 'k')
 		{
 			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+				return (send_response(client_socket, "461", "This option needs a parameter"));
 			channel_t_w_change.mode['k'] = true;
 			channel_t_w_change.key = tokens[3];
 		}
 		else if (mode[1] == 'o')
 		{
 			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+				return (send_response(client_socket, "461", "This option needs a parameter"));
 			channel_t_w_change.mode['o'] = true;
 			current_user.channels[channel_t_w_change.name] = true;
 		}
 		else if (mode[1] == 'l')
 		{
 			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+				return (send_response(client_socket, "461", "This option needs a parameter"));
+
 			channel_t_w_change.mode['l'] = true;
-			int i = to_int(tokens[3].c_str());
-			channel_t_w_change.user_limit = i;
+			int i = atoi(tokens[3].c_str());
+			if (i > 1)
+				channel_t_w_change.user_limit = i;
+			else
+				return (send_response(client_socket, "461", "Last parameter must be > 1"));
 		}
 	}
 	else if (mode[0] == '-')
@@ -70,14 +48,14 @@ void IrcServer::mode_command(int client_socket, const std::vector<std::string> &
 		else if (mode[1] == 'k')
 		{
 			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+				return (send_response(client_socket, "461", "This option needs a parameter"));
 			channel_t_w_change.mode['k'] = false;
 			channel_t_w_change.key = "";
 		}
 		else if (mode[1] == 'o')
 		{
 			if (tokens.size() != 4)
-				return (send_response(client_socket, "461", "ERR_NEEDMOREPARAMS"));
+				return (send_response(client_socket, "461", "This option needs a parameter"));
 			channel_t_w_change.mode['o'] = false;
 			current_user.channels[channel_t_w_change.name] = false;
 		}
@@ -89,7 +67,7 @@ void IrcServer::mode_command(int client_socket, const std::vector<std::string> &
 	}
 	else
 	{
-		send_response(client_socket, "472", "ERR_UNKNOWNMODE");
+		send_response(client_socket, "472", "Unknown mode");
 		return;
 	}
 }
@@ -101,111 +79,130 @@ void IrcServer::whois_command(int client_socket, const std::string &nickname)
 	send_response(client_socket, "WHOIS", message);
 }
 
-// void IrcServer::join_command(user &current_user, const std::string &channel)
-// {
-// 	// ajouter join
-// }
-
-// void IrcServer::privmsg_command(const std::string &recipient, const std::string &message)
-// {
-// 	// ajouter privmsg
-// }
-
-void IrcServer::part_command(user &current_user, const std::vector<std::string> &tokens)
+void IrcServer::join_command(user &current_user, const std::string &channel_name)
 {
-	// check if there is enough arguments
-	if (tokens.size() < 2)
+	// Vérifier si le canal existe déjà
+	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+	if (it == channels_list.end())
 	{
-		send_response(current_user.socket, "461", "ERR_NEEDMOREPARAMS");
+		// Si le canal n'existe pas, le créer
+		channel new_channel;
+		new_channel.name = channel_name;
+		new_channel.users.push_back(current_user.nickname);
+		channels_list[channel_name] = new_channel;
+		std::string formatted_message = current_user.nickname + " " + channel_name + " :" + new_channel.topic;
+		send_response(current_user.socket, "332", formatted_message);
+	}
+	else
+	{
+		// Si le canal existe, ajouter l'utilisateur à la liste des utilisateurs du canal
+		it->second.users.push_back(current_user.nickname);
+	}
+
+	// Envoyer un message de bienvenue à l'utilisateur
+	std::string formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " JOIN :" + channel_name;
+	send_message_to_channel(channel_name, formatted_message);
+
+	// Envoyer la liste des utilisateurs du canal à l'utilisateur
+	std::map<std::string, channel>::iterator it2 = channels_list.find(channel_name);
+	if (it2 != channels_list.end())
+	{
+		formatted_message = ":" + std::string(SERVER_NAME) + " 353 " + current_user.nickname + " = " + channel_name + " :";
+		for (std::vector<std::string>::iterator user_it = it2->second.users.begin(); user_it != it2->second.users.end(); ++user_it)
+		{
+			formatted_message += *user_it + " ";
+		}
+		send_response(current_user.socket, "353", formatted_message);
+	}
+
+	// Envoyer un message de fin de liste des utilisateurs du canal à l'utilisateur
+	formatted_message = ":" + std::string(SERVER_NAME) + " 366 " + current_user.nickname + " " + channel_name + " :End of /NAMES list";
+	send_response(current_user.socket, "366", formatted_message);
+}
+
+void IrcServer::privmsg_command(user &current_user, const std::string &target, const std::string &message)
+{
+	// Vérifier si la cible est un utilisateur ou un canal
+	if (target[0] == '#')
+	{
+		// Envoyer le message à tous les utilisateurs connectés au canal
+		std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PRIVMSG " + target + " :" + message;
+		send_message_to_channel_except(target, formatted_message, current_user.nickname);
+	}
+	else
+	{
+		// Vérifier si l'utilisateur existe
+		std::map<int, user>::iterator it = users_list.find(current_user.socket);
+		if (it == users_list.end())
+		{
+			return;
+		}
+
+		// Envoyer le message à l'utilisateur
+		send_message_to_client(it->second.socket, current_user.nickname + ": " + message);
+	}
+}
+
+void IrcServer::part_command(user &current_user, const std::string &channel_name)
+{
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+	if (it == channels_list.end())
+	{
+		send_response(current_user.socket, "403", channel_name + " :No such channel");
 		return;
 	}
-	// parse the channels to leave
-	std::vector<std::string> channels_to_leave = split(tokens[1], ",");
-	// for each channel to leave
-	for (std::string channel_to_leave; !channels_to_leave.empty(); channels_to_leave.pop_back())
+
+	// Vérifier si l'utilisateur est connecté au canal
+	bool user_found = false;
+	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
 	{
-		channel_to_leave = channels_to_leave.back();
-		// check if the channel exists
-		if (channels_list.find(channel_to_leave) == channels_list.end())
+		if (*user_it == current_user.nickname)
 		{
-			send_response(current_user.socket, "403", "ERR_NOSUCHCHANNEL");
-			return;
+			user_found = true;
+			it->second.users.erase(user_it);
+
+			// Envoyer un message de départ à tous les utilisateurs connectés au canal
+			std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PART " + channel_name;
+			send_message_to_all(formatted_message);
+			break;
 		}
-		// check if the user is in the channel
-		if (current_user.channels.find(channel_to_leave) == current_user.channels.end())
-		{
-			send_response(current_user.socket, "442", "ERR_NOTONCHANNEL");
-			return;
-		}
-		// remove the user from the channel
-		current_user.channels.erase(channel_to_leave);
-		// send a message to the channel
-		std::string goodbye_message = current_user.nickname + " left the channel " + channel_to_leave;
-		send_message_to_channel(channels_list[channel_to_leave], goodbye_message);
+	}
+	if (!user_found)
+	{
+		send_response(current_user.socket, "442", channel_name + " :You're not on that channel");
 	}
 }
 
-// void IrcServer::part_command(user &current_user)
-// {
-// 	// Vérifier si l'utilisateur est dans un canal
-// 	if (!current_user.channels.empty())
-// 	{
-// 		// Prendre le dernier canal de la liste des canaux du client
-// 		std::string channel = current_user.channels.back();
-
-// 		// Supprimer le canal de la liste des canaux du client
-// 		current_user.channels.pop_back();
-
-// 		// Envoyer un message de départ aux autres clients du canal
-// 		std::string goodbye_message = current_user.nickname + " left the channel " + channel;
-// 		send_message_to_channel(channel, goodbye_message);
-// 	}
-// 	else
-// 	{
-// 		// Envoyer un message indiquant que le client n'est pas dans un canal
-// 		std::string error_message = "You're not in any channel";
-// 		send_message_to_client(current_user.socket, error_message);
-// 	}
-// }
-
-int IrcServer::user_command(user &current_user, const std::vector<std::string> &tokens)
+void IrcServer::user_command(user &current_user, const std::string &username)
 {
-	if (tokens.size() < 5)
-	{
-		send_response(current_user.socket, "461", "ERR_NEEDMOREPARAMS");
-		return -1;
-	}
-	if (current_user.authentified == true)
-	{
-		send_response(current_user.socket, "462", "ERR_ALREADYREGISTRED");
-		return -1;
-	}
-	current_user.username = tokens[1];
-	// remove ':' from realname and concatenate all tokens
-	current_user.realname = tokens[4];
-	for (size_t i = 5; i < tokens.size(); ++i)
-		current_user.realname += " " + tokens[i];
-	current_user.realname.erase(0, 1);
-	return (0);
-}
-
-int IrcServer::nick_command(user &current_user, const std::string &nickname)
-{
-	// Vérifier si le pseudonyme est vide
-	if (nickname.empty())
-	{
-		send_response(current_user.socket, "431", "No nickname given");
-		return -1;
-	}
-	// Vérifier si le pseudonyme est déjà utilisé
+	// Vérifier si le nom d'utilisateur est déjà utilisé
 	std::map<int, user>::iterator it;
 	for (it = users_list.begin(); it != users_list.end(); ++it)
 	{
-		user user_checked = it->second;
-		if (user_checked.nickname == nickname && it->first != current_user.socket)
+		if (it->second.username == username)
+		{
+			send_response(current_user.socket, "433", "Username already in use");
+			return;
+		}
+	}
+
+	// Changer le nom d'utilisateur du client
+	current_user.username = username;
+
+	// Maintenant que le nom d'utilisateur a changé, nous devons mettre à jour notre map users_list
+	users_list[current_user.socket] = current_user;
+}
+
+void IrcServer::nick_command(user &current_user, const std::string &nickname)
+{
+	// Vérifier si le pseudonyme est déjà utilisé
+	for (std::map<int, user>::iterator it = users_list.begin(); it != users_list.end(); ++it)
+	{
+		if (it->second.nickname == nickname && it->first != current_user.socket)
 		{
 			send_response(current_user.socket, "433", "This nickname is already in use");
-			return -1;
+			return;
 		}
 	}
 
@@ -213,10 +210,75 @@ int IrcServer::nick_command(user &current_user, const std::string &nickname)
 	std::string old_nickname = current_user.nickname;
 	current_user.nickname = nickname;
 
+	// Envoyer une notification de changement de pseudo à tous les autres utilisateurs du même canal
+	for (std::map<std::string, bool>::iterator channel_it = current_user.channels.begin(); channel_it != current_user.channels.end(); ++channel_it)
+	{
+		if (channel_it->second)
+		{
+			std::string message = ":" + old_nickname + "!username@hostname NICK :" + nickname;
+			send_message_to_channel(channel_it->first, message);
+		}
+	}
+
 	// Envoyer un message de bienvenue au client avec son nouveau pseudonyme
-	if (current_user.authentified == true)
-		send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Your nickname has change from " + old_nickname + " to " + nickname);
-	// 	send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Welcome to the server " + SERVER_NAME + ", " + nickname + " !");
-	// else
-	return 0;
+	if (old_nickname.empty() && !nickname.empty())
+		send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Welcome to the server " + SERVER_NAME + ", " + nickname + " !");
+	else if (!old_nickname.empty() && !nickname.empty())
+		send_message_to_client(current_user.socket, ":" + old_nickname + " NICK " + nickname);
+}
+
+
+void IrcServer::quit_command(user &current_user, const std::string &message)
+{
+	// Envoyer un message de départ à tous les utilisateurs connectés au canal
+	std::string formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " QUIT :" + message;
+	send_message_to_all(formatted_message);
+
+	// Fermer la socket de l'utilisateur
+	shutdown(current_user.socket, SHUT_RDWR);
+
+	// Supprimer l'utilisateur de la liste des utilisateurs connectés
+	users_list.erase(current_user.socket);
+}
+
+void IrcServer::who_command(user &current_user, const std::string &channel_name)
+{
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+	if (it == channels_list.end())
+	{
+		send_response(current_user.socket, "403", channel_name + " :No such channel");
+		return;
+	}
+
+	// Envoyer la liste des utilisateurs connectés au canal
+	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
+	{
+		std::map<int, user>::iterator user_list_it = users_list.find(current_user.socket);
+		if (user_list_it != users_list.end())
+		{
+			std::string formatted_message = ":" + std::string(SERVER_NAME) + " 352 " + current_user.nickname + " " + channel_name + " " + user_list_it->second.username + " " + SERVER_NAME + " " + user_list_it->second.nickname;
+			send_response(current_user.socket, "352", formatted_message);
+		}
+	}
+}
+
+void IrcServer::names_command(user &current_user, const std::string &channel_name)
+{
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+	if (it == channels_list.end())
+	{
+		send_response(current_user.socket, "403", channel_name + " :No such channel");
+		return;
+	}
+
+	// Envoyer la liste des utilisateurs connectés au canal
+	std::string user_list = "";
+	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
+	{
+		user_list += *user_it + " ";
+	}
+	send_response(current_user.socket, "353", "= " + channel_name + " :" + user_list);
+	send_response(current_user.socket, "366", channel_name + " :End of /NAMES list");
 }
