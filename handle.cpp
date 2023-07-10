@@ -41,12 +41,12 @@ bool IrcServer::check_password(const std::string & password, user & current_user
 		send_response(current_user.socket, "464", ":Incorrect Password");
 		return false;
 	}
-	if (current_user.authentified == true)
+	if (current_user.status >= AUTHENTIFIED)
 	{
 		send_response(current_user.socket, "462", ":Already registered");
 		return false;
 	}
-	current_user.authentified = true;
+	current_user.status = AUTHENTIFIED;
 	return true;
 }
 
@@ -58,20 +58,24 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 		return -1;
 	if (tokens[0] == "CAP" && tokens[1] == "LS")
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
-	if (tokens[0] == "PASS" && check_password(tokens[1], current_user))
+	if (!tokens.empty() && tokens[0] == "PASS")
 	{
-		tokens.erase(tokens.begin(), tokens.begin() + 2);
-		if (tokens[0] != "NICK")// send an error message or change behaviour
+		if (!check_password(tokens[1], current_user))
 			return -1;
+		tokens.erase(tokens.begin(), tokens.begin() + 2);
+	}
+
+	if (!tokens.empty() && tokens[0] == "NICK")// send an error message or change behaviour
+	{
 		nick_command(current_user, tokens[1]);
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
-		if (tokens[0] != "USER")// send an error message
-			return -1;
-		user_command(current_user, tokens[1]);
-		users_list.insert(std::pair<int, user>(client_socket, current_user));
-		return 0;
 	}
-	return -1;
+	if (!tokens.empty() && tokens[0] == "USER")// send an error message
+	{
+		user_command(current_user, tokens);
+		users_list.insert(std::pair<int, user>(client_socket, current_user));
+	}
+	return 0;
 }
 
 int IrcServer::handle_client_connection(int client_socket)

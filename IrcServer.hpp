@@ -25,6 +25,12 @@
 # define MAX_CLIENTS 100
 # define SERVER_NAME "ft_ircserv.fr"
 
+// user status
+# define UNAUTHENTIFIED 0
+# define AUTHENTIFIED 1
+# define NICKNAME_SET 2
+# define REGISTERED 3
+
 # define OFFLINE -1
 
 class IrcServer
@@ -39,14 +45,15 @@ private:
 	class user
 	{
 	public:
-		user(const int fd = -1) : nickname(), username(), authentified(false), socket(fd), channels() {}
-		user(const user &other) : nickname(other.nickname), username(other.username), authentified(other.authentified), socket(other.socket), channels(other.channels) {}
+		user(const int fd = -1) : nickname(), username(), realname(), status(UNAUTHENTIFIED), socket(fd), channels() {}
+		user(const user &other) : nickname(other.nickname), username(other.username), realname(other.realname), status(other.status), socket(other.socket), channels(other.channels) {}
 		user & operator=(const user &rhs) {
 			if (this != &rhs)
 			{
 				nickname = rhs.nickname;
 				username = rhs.username;
-				authentified = rhs.authentified;
+				realname = rhs.realname;
+				status = rhs.status;
 				socket = rhs.socket;
 				channels = rhs.channels;
 			}
@@ -54,7 +61,8 @@ private:
 		}
 		std::string					nickname;
 		std::string					username;
-		bool						authentified;
+		std::string					realname;
+		int							status;
 		int							socket;
 		std::map<std::string, bool>	channels;
 	};
@@ -82,8 +90,8 @@ private:
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
-	void nick_command(user &current_user, const std::string &nickname);
-	void user_command(user &current_user, const std::string &username);
+	int nick_command(user &current_user, const std::string &nickname);
+	int user_command(user &current_user, const std::vector<std::string>& tokens);
 	void join_command(user &current_user, const std::string &channel_name);
 	void privmsg_command(user &current_user, const std::string &recipient, const std::string &message);
 	void part_command(user &current_user, const std::string &channel_name);

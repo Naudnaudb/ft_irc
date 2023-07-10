@@ -174,27 +174,31 @@ void IrcServer::part_command(user &current_user, const std::string &channel_name
 	}
 }
 
-void IrcServer::user_command(user &current_user, const std::string &username)
+int IrcServer::user_command(user &current_user, const std::vector<std::string>& tokens)
 {
-	// Vérifier si le nom d'utilisateur est déjà utilisé
-	std::map<int, user>::iterator it;
-	for (it = users_list.begin(); it != users_list.end(); ++it)
+	if (current_user.status < NICKNAME_SET)
+		return -1;
+	if (tokens.size() < 5)
 	{
-		if (it->second.username == username)
-		{
-			send_response(current_user.socket, "433", "Username already in use");
-			return;
-		}
+		send_response(current_user.socket, "461", "ERR_NEEDMOREPARAMS, you should provide 4 parameters. Your current username is your nickname.");
+		return -1;
 	}
-
-	// Changer le nom d'utilisateur du client
-	current_user.username = username;
-
-	// Maintenant que le nom d'utilisateur a changé, nous devons mettre à jour notre map users_list
-	users_list[current_user.socket] = current_user;
+	if (current_user.status == REGISTERED)
+	{
+		send_response(current_user.socket, "462", "ERR_ALREADYREGISTRED");
+		return -1;
+	}
+	current_user.username = tokens[1];
+	// remove ':' from realname and concatenate all tokens
+	current_user.realname = tokens[4];
+	for (size_t i = 5; i < tokens.size(); ++i)
+		current_user.realname += " " + tokens[i];
+	current_user.realname.erase(0, 1);
+	current_user.status = REGISTERED;
+	return (0);
 }
 
-void IrcServer::nick_command(user &current_user, const std::string &nickname)
+int IrcServer::nick_command(user &current_user, const std::string &nickname)
 {
 	// Vérifier si le pseudonyme est déjà utilisé
 	for (std::map<int, user>::iterator it = users_list.begin(); it != users_list.end(); ++it)
@@ -225,6 +229,8 @@ void IrcServer::nick_command(user &current_user, const std::string &nickname)
 		send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Welcome to the server " + SERVER_NAME + ", " + nickname + " !");
 	else if (!old_nickname.empty() && !nickname.empty())
 		send_message_to_client(current_user.socket, ":" + old_nickname + " NICK " + nickname);
+	
+	current_user.status = NICKNAME_SET;
 }
 
 
