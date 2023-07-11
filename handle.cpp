@@ -2,7 +2,7 @@
 
 int IrcServer::handle_command(int client_socket, const std::vector<std::string> &tokens)
 {
-	user current_user = users_list[client_socket];
+	user & current_user = users_list[client_socket];
 	std::string nickname = users_list[client_socket].nickname;
 	std::string command = tokens[0];
 	std::cout << "Commande reçue : " << command << std::endl;
