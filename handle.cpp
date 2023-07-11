@@ -12,7 +12,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		join_command(current_user, channel);
 	}
 	else if (command == "NICK")
-		nick_command(current_user, tokens[1]);
+		nick_command(current_user, tokens);
 	else if (command == "PRIVMSG")
 		privmsg_command(current_user, tokens[1], tokens[2]);
 	else if (command == "PING")
@@ -54,9 +54,9 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 {
 	user current_user(client_socket);
 
-	if (tokens.empty() || tokens.size() < 6) // send an error message
+	if (tokens.empty()) // send an error message
 		return -1;
-	if (tokens[0] == "CAP" && tokens[1] == "LS")
+	if (tokens.size() > 1 && tokens[0] == "CAP" && tokens[1] == "LS")
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
 	if (!tokens.empty() && tokens[0] == "PASS")
 	{
@@ -67,12 +67,14 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 
 	if (!tokens.empty() && tokens[0] == "NICK")// send an error message or change behaviour
 	{
-		nick_command(current_user, tokens[1]);
+		if (nick_command(current_user, tokens) == -1)
+			return -1;
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
 	}
 	if (!tokens.empty() && tokens[0] == "USER")// send an error message
 	{
-		user_command(current_user, tokens);
+		if (user_command(current_user, tokens) == -1)
+			return -1;
 		users_list.insert(std::pair<int, user>(client_socket, current_user));
 	}
 	return 0;

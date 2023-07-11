@@ -21,6 +21,7 @@
 # include <sstream>
 # include <algorithm>
 # include <string>
+# include <stdlib.h>
 
 # define MAX_CLIENTS 100
 # define SERVER_NAME "ft_ircserv.fr"
@@ -90,7 +91,7 @@ private:
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
-	int nick_command(user &current_user, const std::string &nickname);
+	int nick_command(user &current_user, const std::vector<std::string> & tokens);
 	int user_command(user &current_user, const std::vector<std::string>& tokens);
 	void join_command(user &current_user, const std::string &channel_name);
 	void privmsg_command(user &current_user, const std::string &recipient, const std::string &message);
@@ -101,6 +102,7 @@ private:
 	void who_command(user &current_user, const std::string &channel_name);
 	void names_command(user &current_user, const std::string &channel_name);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
+	int fix_nickname_collision(user &current_user, std::string nickname);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
