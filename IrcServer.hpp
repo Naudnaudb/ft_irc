@@ -55,7 +55,7 @@ private:
 		std::string					username;
 		bool						authentified;
 		int							socket;
-		std::map<std::string, bool>	channels;
+		std::map<std::string, bool>	channels; // string = the channels where the user is registered | bool = true if user is operator
 	};
 	class channel
 	{
