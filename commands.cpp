@@ -194,37 +194,89 @@ void IrcServer::user_command(user &current_user, const std::string &username)
 	users_list[current_user.socket] = current_user;
 }
 
-void IrcServer::nick_command(user &current_user, const std::string &nickname)
+int	IrcServer::fix_nickname_collision(user &current_user, std::string nickname)
 {
-	// Vérifier si le pseudonyme est déjà utilisé
+	int i = 0;
+	std::stringstream nb;
 	for (std::map<int, user>::iterator it = users_list.begin(); it != users_list.end(); ++it)
 	{
-		if (it->second.nickname == nickname && it->first != current_user.socket)
+		if (it->second.nickname == nickname + nb.str() && it->first != current_user.socket)
 		{
-			send_response(current_user.socket, "433", "This nickname is already in use");
-			return;
+			if (current_user.status == REGISTERED)
+			{
+				send_response(current_user.socket, "433", "Nickname is already in use");
+				return -1;
+			}
+			nb.str("");
+			nb << ++i;
+			it = users_list.begin();
 		}
 	}
+	current_user.nickname = nickname + nb.str();
+	return 0;
+}
 
-	// Changer le pseudonyme du client
-	std::string old_nickname = current_user.nickname;
-	current_user.nickname = nickname;
-
-	// Envoyer une notification de changement de pseudo à tous les autres utilisateurs du même canal
-	for (std::map<std::string, bool>::iterator channel_it = current_user.channels.begin(); channel_it != current_user.channels.end(); ++channel_it)
+int IrcServer::nick_command(user &current_user, const std::vector<std::string> & tokens)
+{
+	// Vérifier si le pseudonyme est vide
+	if (tokens.size() < 2 || tokens[1].empty())
 	{
-		if (channel_it->second)
-		{
-			std::string message = ":" + old_nickname + "!username@hostname NICK :" + nickname;
-			send_message_to_channel(channel_it->first, message);
-		}
+		send_response(current_user.socket, "431", "No nickname given");
+		return -1;
+	}
+	if (current_user.nickname == tokens[1])
+		return 0;
+	std::string nickname = tokens[1];
+	std::string old_nickname = current_user.nickname;
+	// Assign nickname and handle nickname collision
+	if (fix_nickname_collision(current_user, nickname) == -1)
+		return -1;
+
+	// Send confirmation message to user and channel
+	if (current_user.status == REGISTERED)
+	{
+		send_message_to_client(current_user.socket, ":" + old_nickname + " NICK " + nickname);
+		// send_message_to_channel(channel_name, message);
+	}
+	else
+		current_user.status = NICKNAME_SET;
+	return 0;
+}
+
+
+void IrcServer::quit_command(user &current_user, const std::string &message)
+{
+	// Envoyer un message de départ à tous les utilisateurs connectés au canal
+	std::string formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " QUIT :" + message;
+	send_message_to_all(formatted_message);
+
+	// Fermer la socket de l'utilisateur
+	shutdown(current_user.socket, SHUT_RDWR);
+
+	// Supprimer l'utilisateur de la liste des utilisateurs connectés
+	users_list.erase(current_user.socket);
+}
+
+void IrcServer::who_command(user &current_user, const std::string &channel_name)
+{
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+	if (it == channels_list.end())
+	{
+		send_response(current_user.socket, "403", channel_name + " :No such channel");
+		return;
 	}
 
-	// Envoyer un message de bienvenue au client avec son nouveau pseudonyme
-	if (old_nickname.empty() && !nickname.empty())
-		send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + nickname + " :Welcome to the server " + SERVER_NAME + ", " + nickname + " !");
-	else if (!old_nickname.empty() && !nickname.empty())
-		send_message_to_client(current_user.socket, ":" + old_nickname + " NICK " + nickname);
+	// Envoyer la liste des utilisateurs connectés au canal
+	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
+	{
+		std::map<int, user>::iterator user_list_it = users_list.find(current_user.socket);
+		if (user_list_it != users_list.end())
+		{
+			std::string formatted_message = ":" + std::string(SERVER_NAME) + " 352 " + current_user.nickname + " " + channel_name + " " + user_list_it->second.username + " " + SERVER_NAME + " " + user_list_it->second.nickname;
+			send_response(current_user.socket, "352", formatted_message);
+		}
+	}
 }
 
 

@@ -25,6 +25,12 @@
 # define MAX_CLIENTS 100
 # define SERVER_NAME "ft_ircserv.fr"
 
+// user status
+# define UNAUTHENTIFIED 0
+# define AUTHENTIFIED 1
+# define NICKNAME_SET 2
+# define REGISTERED 3
+
 # define OFFLINE -1
 
 class IrcServer
@@ -54,6 +60,8 @@ private:
 		}
 		std::string					nickname;
 		std::string					username;
+		std::string					realname;
+		int							status;
 		bool						authentified;
 		int							socket;
 		std::map<std::string, bool>	channels;
@@ -82,7 +90,8 @@ private:
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
-	void nick_command(user &current_user, const std::string &nickname);
+	int	fix_nickname_collision(user &current_user, std::string nickname);
+	int nick_command(user &current_user, const std::vector<std::string> & tokens);
 	void user_command(user &current_user, const std::string &username);
 	void join_command(user &current_user, const std::string &channel_name);
 	void privmsg_command(user &current_user, const std::string &recipient, const std::string &message);
