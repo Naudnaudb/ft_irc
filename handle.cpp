@@ -12,7 +12,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		join_command(current_user, channel);
 	}
 	else if (command == "NICK")
-		nick_command(current_user, tokens[1]);
+		nick_command(current_user, tokens);
 	else if (command == "PRIVMSG")
 		privmsg_command(current_user, tokens[1], tokens[2]);
 	else if (command == "PING")
@@ -63,7 +63,7 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
 		if (tokens[0] != "NICK")// send an error message or change behaviour
 			return -1;
-		nick_command(current_user, tokens[1]);
+		nick_command(current_user, tokens);
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
 		if (tokens[0] != "USER")// send an error message
 			return -1;
