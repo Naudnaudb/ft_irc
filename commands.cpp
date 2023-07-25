@@ -212,8 +212,8 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 	send_response(current_user.socket, "366", formatted_message);
 
 	// Notify users in the channel that a new user joined
-	// formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " JOIN :" + channel_name;
-	// send_message_to_channel(channel_name, formatted_message);
+	formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " JOIN :" + channel_name;
+	send_message_to_channel(current_user.nickname, current_chan, formatted_message);
 }
 
 void IrcServer::privmsg_command(user &current_user, const std::string &target, const std::string &message)
