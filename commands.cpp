@@ -131,6 +131,9 @@ void IrcServer::mode_command(const std::vector<std::string> &tokens, user &curre
 	channel &current_chan = channels_list.at(tokens[1]);
 	if (std::find(current_chan.users.begin(), current_chan.users.end(), current_user.nickname) == current_chan.users.end())
 		return (send_response(current_user.socket, "442", current_chan.name + " :You're not on that channel"));
+	// handle channel ban list
+	if (tokens.size() == 3 && tokens[2] == "b")
+		return send_response(current_user.socket, "368", "End of channel ban list");
 	if (std::find(current_chan.operators.begin(), current_chan.operators.end(), current_user.nickname) == current_chan.operators.end())
 		return (send_response(current_user.socket, "482", current_chan.name + " :You're not channel operator"));
 	std::string mode = tokens[2];
