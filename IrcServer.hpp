@@ -65,25 +65,30 @@ private:
 		std::string					realname;
 		int							status;
 		int							socket;
-		std::map<std::string, bool>	channels;
+		std::map<std::string, bool>	channels;// if not needed use a vector instead
 	};
 	class channel
 	{
 	public:
-		channel(const std::string &name = "") : name(name) {
+		channel(const std::string & creator, const std::string &name = "") : name(name), topic(), users(), operators(), key() {
 			mode['i'] = false;
 			mode['t'] = false;
 			mode['k'] = false;
-			mode['o'] = false;
 			mode['l'] = false;
 			user_limit = __INT_MAX__;
+			users.push_back(creator);
+			operators.push_back(creator);
 		}
+		channel(const channel &other) : name(other.name), topic(other.topic), users(other.users), operators(other.operators), mode(other.mode), key(other.key), user_limit(other.user_limit) {}
 		std::string					name;
 		std::string					topic;
 		std::vector<std::string>	users;
+		std::vector<std::string>	operators;
 		std::map<char, bool>		mode; // char = cle (i, t, k, o, l) & bool = false/true (0, 1)
 		std::string					key;
 		int							user_limit;
+	private:
+		channel() {}
 	};
 
 	std::vector<std::string> tokenize(const std::string &message);
@@ -93,16 +98,22 @@ private:
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
 	int nick_command(user &current_user, const std::vector<std::string> & tokens);
 	int user_command(user &current_user, const std::vector<std::string>& tokens);
-	void join_command(user &current_user, const std::string &channel_name);
+	void join_command(user &current_user, const std::vector<std::string> &tokens);
 	void privmsg_command(user &current_user, const std::string &recipient, const std::string &message);
 	void part_command(user &current_user, const std::string &channel_name);
-	void mode_command(int client_socket, const std::vector<std::string> &tokens, user &current_user);
+	void mode_command(const std::vector<std::string> &tokens, user &current_user);
 	void whois_command(int client_socket, const std::string &nickname);
 	void quit_command(user &current_user, const std::string &message);
 	void who_command(user &current_user, const std::string &channel_name);
 	void names_command(user &current_user, const std::string &channel_name);
 	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
 	int fix_nickname_collision(user &current_user, std::string nickname);
+	void add_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_prommote);
+	void remove_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_remove);
+	int	user_exists(const std::string & nick);
+	void add_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens);
+	void remove_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens);
+	void request_chan_modes(const std::vector<std::string> &tokens, user &current_user);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
@@ -112,6 +123,9 @@ private:
 	void send_message_to_all(const std::string& message);
 
 	bool check_password(const std::string &password, user &current_user);
+	int check_channel_name(const std::string &channel_name);
+	int is_operator(const std::string & current_user, const channel & current_chan);
+
 	int port_;
 	std::string password_;
 	int server_socket_;

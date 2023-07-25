@@ -18,7 +18,18 @@ void IrcServer::send_message_to_client(int client_socket, const std::string &mes
 	if (bytes_sent == -1)
 		std::cerr << "Error: sending message to client (socket: " << client_socket << "): " << strerror(errno) << std::endl;
 }
-
+// void IrcServer::send_message_to_channel(const channel & current_chan, const std::string &message)
+// {
+//     // Envoyer le message à tous les utilisateurs connectés au canal
+//     for (std::vector<std::string>::iterator chan_users_it = current_chan.users.begin(); chan_users_it != current_chan.users.end(); ++chan_users_it)
+//     {
+//         for (std::map<int, user>::iterator server_users_it = users_list.begin(); server_users_it != users_list.end(); ++server_users_it)
+//         {
+//             if (server_users_it->second.nickname == *chan_users_it)
+//                 send_message_to_client(server_users_it->second.socket, message);
+//         }
+//     }
+// }
 void IrcServer::send_message_to_channel(const std::string &channel_name, const std::string &message)
 {
     // Vérifier si le canal existe

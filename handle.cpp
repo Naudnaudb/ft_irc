@@ -7,10 +7,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	std::string command = tokens[0];
 	std::cout << "Commande reçue : " << command << std::endl;
 	if (command == "JOIN")
-	{
-		std::string channel = tokens[1];
-		join_command(current_user, channel);
-	}
+		join_command(current_user, tokens);
 	else if (command == "NICK")
 		nick_command(current_user, tokens);
 	else if (command == "PRIVMSG")
@@ -18,7 +15,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	else if (command == "PING")
 		send_message_to_client(client_socket, "PONG");
 	else if (command == "MODE")
-		mode_command(client_socket, tokens, current_user);
+		mode_command(tokens, current_user);
 	else if (command == "WHOIS")
 		whois_command(client_socket, nickname);
 	else if (command == "PART")
