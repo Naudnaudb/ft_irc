@@ -19,7 +19,22 @@ void IrcServer::send_message_to_client(int client_socket, const std::string &mes
 		std::cerr << "Error: sending message to client (socket: " << client_socket << "): " << strerror(errno) << std::endl;
 }
 
-void IrcServer::send_message_to_channel(const std::string & sender, const channel &current_chan, const std::string &message)
+void IrcServer::send_message_to_channel(const channel &current_chan, const std::string &message)
+{
+	std::cout << "sending to channeldksjdfkdjfldkjflkj" << std::endl;
+    // Envoyer le message à tous les utilisateurs connectés au canal
+    for (std::vector<std::string>::const_iterator user_it = current_chan.users.begin(); user_it != current_chan.users.end(); ++user_it)
+    {
+		std::cout << "sending to user : " << *user_it << std::endl;
+        for (std::map<int, user>::iterator user_map_it = users_list.begin(); user_map_it != users_list.end(); ++user_map_it)
+        {
+            if (user_map_it->second.nickname == *user_it)
+                send_message_to_client(user_map_it->second.socket, message);
+        }
+    }
+}
+
+void IrcServer::send_message_to_channel_except(const std::string & sender, const channel &current_chan, const std::string &message)
 {
     // Envoyer le message à tous les utilisateurs connectés au canal
     for (std::vector<std::string>::const_iterator user_it = current_chan.users.begin(); user_it != current_chan.users.end(); ++user_it)
@@ -30,31 +45,6 @@ void IrcServer::send_message_to_channel(const std::string & sender, const channe
                 send_message_to_client(user_map_it->second.socket, message);
         }
     }
-}
-
-void IrcServer::send_message_to_channel_except(const std::string &channel_name, const std::string &message, const std::string &nickname)
-{
-	// Vérifier si le canal existe
-	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
-	if (it == channels_list.end())
-	{
-		return;
-	}
-
-	// Envoyer le message à tous les utilisateurs connectés au canal
-	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
-	{
-		if (*user_it != nickname)
-		{
-			for (std::map<int, user>::iterator user_map_it = users_list.begin(); user_map_it != users_list.end(); ++user_map_it)
-			{
-				if (user_map_it->second.nickname == *user_it)
-				{
-					send_message_to_client(user_map_it->second.socket, message);
-				}
-			}
-		}
-	}
 }
 
 

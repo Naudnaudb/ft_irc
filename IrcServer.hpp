@@ -119,8 +119,8 @@ private:
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
-	void send_message_to_channel(const std::string & sender, const channel &current_chan, const std::string &message);
-	void send_message_to_channel_except(const std::string &channel_name, const std::string &message, const std::string &nickname);
+	void send_message_to_channel(const channel &current_chan, const std::string &message);
+	void send_message_to_channel_except(const std::string & sender, const channel &current_chan, const std::string &message);
 	void send_message_to_all(const std::string& message);
 
 	bool check_password(const std::string &password, user &current_user);

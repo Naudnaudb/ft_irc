@@ -227,7 +227,7 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 
 	// Notify users in the channel that a new user joined
 	formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " JOIN :" + channel_name;
-	send_message_to_channel(current_user.nickname, current_chan, formatted_message);
+	send_message_to_channel(current_chan, formatted_message);
 }
 
 void split(const std::string &s, char delim, std::vector<std::string> & dest)
@@ -260,7 +260,7 @@ void IrcServer::privmsg_command(user &current_user, const std::vector<std::strin
 			// Vérifier si le channel existe et envoyer le message
 			std::map<std::string, channel>::iterator chan_it = channels_list.find(target);
 			if (chan_it != channels_list.end())
-				send_message_to_channel(current_user.nickname, chan_it->second, formatted_message);
+				send_message_to_channel_except(current_user.nickname, chan_it->second, formatted_message);
 		}
 		else
 		{
@@ -288,12 +288,11 @@ void IrcServer::part_command(user &current_user, const std::string &channel_name
 	{
 		if (*user_it == current_user.nickname)
 		{
-			user_found = true;
-			it->second.users.erase(user_it);
-
 			// Envoyer un message de départ à tous les utilisateurs connectés au canal
 			std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PART " + channel_name;
-			send_message_to_all(formatted_message);
+			send_message_to_channel(it->second, formatted_message);
+			user_found = true;
+			it->second.users.erase(user_it);
 			break;
 		}
 	}
