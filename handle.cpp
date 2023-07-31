@@ -11,7 +11,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	else if (command == "NICK")
 		nick_command(current_user, tokens);
 	else if (command == "PRIVMSG")
-		privmsg_command(current_user, tokens[1], tokens[2]);
+		privmsg_command(current_user, tokens);
 	else if (command == "PING")
 		send_message_to_client(client_socket, "PONG");
 	else if (command == "MODE")
@@ -47,10 +47,8 @@ bool IrcServer::check_password(const std::string & password, user & current_user
 	return true;
 }
 
-int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std::string> tokens)
+int	IrcServer::handle_client_first_connection(user & current_user, std::vector<std::string> tokens)
 {
-	user current_user(client_socket);
-
 	if (tokens.empty()) // send an error message
 		return -1;
 	if (tokens.size() > 1 && tokens[0] == "CAP" && tokens[1] == "LS")
@@ -72,13 +70,17 @@ int	IrcServer::handle_client_first_connection(int client_socket, std::vector<std
 	{
 		if (user_command(current_user, tokens) == -1)
 			return -1;
-		users_list.insert(std::pair<int, user>(client_socket, current_user));
+		users_list.insert(std::pair<int, user>(current_user.socket, current_user));
 	}
 	return 0;
 }
 
 int IrcServer::handle_client_connection(int client_socket)
 {
+	user current_user(client_socket);
+	if (users_list.find(client_socket) != users_list.end())
+		current_user = users_list[client_socket];
+
 	struct sockaddr_in client_address_;
 
 	socklen_t client_address_length = sizeof(client_address_);
@@ -98,14 +100,15 @@ int IrcServer::handle_client_connection(int client_socket)
 	// if the message is empty it means client disconnected
 	if (message.empty())
 		return -1;
-	std::vector<std::string> tokens = tokenize(message);
-	// afficher tout les tokens
-	for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); ++it)
-		std::cout << *it << std::endl;
-	
-	// check if the client is new
-	if (users_list.find(client_socket) == users_list.end())
-		return handle_client_first_connection(client_socket, tokens);
-	else
-		return handle_command(client_socket, tokens);
+	int res = 0;
+	while (message.size() > 0 && res == 0)
+	{
+		std::vector<std::string> tokens = tokenize(message);
+		// check if the client is new
+		if (users_list.find(client_socket) == users_list.end())
+			res = handle_client_first_connection(current_user, tokens);
+		else
+			res = handle_command(client_socket, tokens);
+	}
+	return res;
 }

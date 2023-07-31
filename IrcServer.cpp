@@ -2,26 +2,35 @@
 
 #define MAX_CONNECTIONS 1000
 
-
-std::vector<std::string> IrcServer::tokenize(const std::string &message)
+std::vector<std::string> IrcServer::tokenize(std::string &message)
 {
 	std::vector<std::string> tokens;
+	std::string current_command = message.substr(0, message.find("\r\n"));
+	message = message.substr(message.find("\r\n") + 2);
+	size_t start = current_command.find_first_not_of(" \n");
+	size_t end = current_command.find_first_of(" \n", start);
 
-	size_t start = 0;
-	size_t end = message.find_first_of(" \n");
-
-	while (end != std::string::npos)
+	if (current_command.substr(start, end - start) == "PRIVMSG")
 	{
-		if (end > start && end <= message.size())
-			tokens.push_back(message.substr(start, end - start));
-
-		start = end + 1;
-		end = message.find_first_of(" \n\r", start);
+		for (size_t i = 0; start != std::string::npos && i < 2; ++i)
+		{
+			tokens.push_back(current_command.substr(start, end - start));
+			start = current_command.find_first_not_of(" \n", end);
+			end = current_command.find_first_of(" \n", start);
+		}
+		if (start != std::string::npos)
+			tokens.push_back(current_command.substr(start));
+		return tokens;
 	}
-
-	if (start < message.size())
-		tokens.push_back(message.substr(start));
-
+	else
+	{
+		while (start != std::string::npos)
+		{
+			tokens.push_back(current_command.substr(start, end - start));
+			start = current_command.find_first_not_of(" \n", end);
+			end = current_command.find_first_of(" \n", start);
+		}
+	}
 	return tokens;
 }
 

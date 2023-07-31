@@ -91,7 +91,7 @@ private:
 		channel() {}
 	};
 
-	std::vector<std::string> tokenize(const std::string &message);
+	std::vector<std::string> tokenize(std::string &message);
 
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
@@ -99,14 +99,14 @@ private:
 	int nick_command(user &current_user, const std::vector<std::string> & tokens);
 	int user_command(user &current_user, const std::vector<std::string>& tokens);
 	void join_command(user &current_user, const std::vector<std::string> &tokens);
-	void privmsg_command(user &current_user, const std::string &recipient, const std::string &message);
+	void privmsg_command(user &current_user, const std::vector<std::string> &tokens);
 	void part_command(user &current_user, const std::string &channel_name);
 	void mode_command(const std::vector<std::string> &tokens, user &current_user);
 	void whois_command(int client_socket, const std::string &nickname);
 	void quit_command(user &current_user, const std::string &message);
 	void who_command(user &current_user, const std::string &channel_name);
 	void names_command(user &current_user, const std::string &channel_name);
-	int handle_client_first_connection(int client_socket, std::vector<std::string> tokens);
+	int handle_client_first_connection(user & current_user, std::vector<std::string> tokens);
 	int fix_nickname_collision(user &current_user, std::string nickname);
 	void add_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_prommote);
 	void remove_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_remove);
@@ -114,6 +114,7 @@ private:
 	void add_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens);
 	void remove_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens);
 	void request_chan_modes(const std::vector<std::string> &tokens, user &current_user);
+	int	get_user_socket_by_nick(const std::string & nick);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
@@ -137,5 +138,5 @@ private:
 	std::map<int , user> users_list;
 	std::map<std::string, channel> channels_list;
 };
-
+void split(const std::string &s, char delim, std::vector<std::string> & dest);
 #endif

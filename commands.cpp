@@ -1,6 +1,17 @@
 #include "IrcServer.hpp"
 
 //check if user exists
+
+int		IrcServer::get_user_socket_by_nick(const std::string & nick)
+{
+	for (std::map<int, user>::iterator it = users_list.begin(); it != users_list.end(); ++it)
+	{
+		if (it->second.nickname == nick)
+			return it->first;
+	}
+	return -1;
+}
+
 int		IrcServer::user_exists(const std::string & nick)
 {
 	for (std::map<int, user>::iterator it = users_list.begin(); it != users_list.end(); ++it)
@@ -215,30 +226,49 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 	send_response(current_user.socket, "366", formatted_message);
 
 	// Notify users in the channel that a new user joined
-	formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " JOIN :" + channel_name;
+	formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " JOIN :" + channel_name;
 	send_message_to_channel(current_user.nickname, current_chan, formatted_message);
 }
 
-void IrcServer::privmsg_command(user &current_user, const std::string &target, const std::string &message)
+void split(const std::string &s, char delim, std::vector<std::string> & dest)
 {
-	// Vérifier si la cible est un utilisateur ou un canal
-	if (target[0] == '#')
-	{
-		// Envoyer le message à tous les utilisateurs connectés au canal
-		std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PRIVMSG " + target + " :" + message;
-		send_message_to_channel_except(target, formatted_message, current_user.nickname);
-	}
-	else
-	{
-		// Vérifier si l'utilisateur existe
-		std::map<int, user>::iterator it = users_list.find(current_user.socket);
-		if (it == users_list.end())
-		{
-			return;
-		}
+	std::istringstream iss(s);
+	std::string item;
+	while (std::getline(iss, item, delim))
+		dest.push_back(item);
+}
 
-		// Envoyer le message à l'utilisateur
-		send_message_to_client(it->second.socket, current_user.nickname + ": " + message);
+void IrcServer::privmsg_command(user &current_user, const std::vector<std::string> &tokens)
+{
+	// Vérifier si le nombre de paramètres est correct
+	if (tokens.size() < 3)
+		return (send_response(current_user.socket, "411", ":No recipient given PRIVMSG command"));
+	std::vector<std::string> targets;
+	// Put the targets in a vector
+	split(tokens[1], ',', targets);
+	// Get the message
+	std::string message = tokens[2];
+
+	// Send the message to each target
+	for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); ++it)
+	{
+		std::string target = *it;
+		std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PRIVMSG " + target + " " + message;
+		// Vérifier si c'est un channel
+		if (target[0] == '#' || target[0] == '&')
+		{
+			// Vérifier si le channel existe et envoyer le message
+			std::map<std::string, channel>::iterator chan_it = channels_list.find(target);
+			if (chan_it != channels_list.end())
+				send_message_to_channel(current_user.nickname, chan_it->second, formatted_message);
+		}
+		else
+		{
+			// Vérifier si l'utilisateur existe
+			int target_socket = get_user_socket_by_nick(target);
+			if (target_socket != -1)
+				send_message_to_client(target_socket, formatted_message);
+		}
 	}
 }
 
@@ -351,7 +381,7 @@ int IrcServer::nick_command(user &current_user, const std::vector<std::string> &
 void IrcServer::quit_command(user &current_user, const std::string &message)
 {
 	// Envoyer un message de départ à tous les utilisateurs connectés au canal
-	std::string formatted_message = ":" + current_user.username + "!" + current_user.nickname + "@" + SERVER_NAME + " QUIT :" + message;
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " QUIT :" + message;
 	send_message_to_all(formatted_message);
 
 	// Fermer la socket de l'utilisateur
