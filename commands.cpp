@@ -192,6 +192,9 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 	if (channel_name[0] != '#' && channel_name[0] != '&')
 		return (send_response(current_user.socket, "403", channel_name + " :No such channel"));
 	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
+	// if the user is already in the channel
+	if (it != channels_list.end() && std::find(it->second.users.begin(), it->second.users.end(), current_user.nickname) != it->second.users.end())
+		return (send_response(current_user.socket, "443", channel_name + " :is already in use"));
 	if (it == channels_list.end())
 	{
 		if (!check_channel_name(channel_name))
@@ -204,7 +207,8 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 		// Si le canal existe, ajouter l'utilisateur à la liste des utilisateurs du canal
 		it->second.users.push_back(current_user.nickname);
 	}
-
+	// add channel to user's channel list
+	current_user.channels.push_back(channel_name);
 	// if the topic is set send it to the user
 	if (it != channels_list.end() && !it->second.topic.empty())
 		send_response(current_user.socket, "332", current_user.nickname + " " + channel_name + " :" + it->second.topic);
@@ -292,7 +296,17 @@ void IrcServer::part_command(user &current_user, const std::string &channel_name
 			std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PART " + channel_name;
 			send_message_to_channel(it->second, formatted_message);
 			user_found = true;
+			// remove user from channel
 			it->second.users.erase(user_it);
+			// remove channel from user's channel list
+			for (std::vector<std::string>::iterator chan_it = current_user.channels.begin(); chan_it != current_user.channels.end(); ++chan_it)
+			{
+				if (*chan_it == channel_name)
+				{
+					current_user.channels.erase(chan_it);
+					break;
+				}
+			}
 			break;
 		}
 	}
@@ -349,6 +363,42 @@ int	IrcServer::fix_nickname_collision(user &current_user, std::string nickname)
 	return 0;
 }
 
+void IrcServer::update_nick_in_channels(user & current_user, const std::string & old_nickname)
+{
+	if (current_user.channels.empty())
+		return;
+	// update user's nickname in all channels
+	for (std::vector<std::string>::iterator it = current_user.channels.begin(); it != current_user.channels.end(); ++it)
+	{
+		// update user's nickname in channel
+		std::map<std::string, channel>::iterator chan_it = channels_list.find(*it);
+		if (chan_it != channels_list.end())
+		{
+			// look for user nickname in channel's user list
+			for (std::vector<std::string>::iterator user_it = chan_it->second.users.begin(); user_it != chan_it->second.users.end(); ++user_it)
+			{
+				if (*user_it == old_nickname)
+				{
+					*user_it = current_user.nickname;
+					break;
+				}
+			}
+			// look for user nickname in channel's operator list
+			for (std::vector<std::string>::iterator oper_it = chan_it->second.operators.begin(); oper_it != chan_it->second.operators.end(); ++oper_it)
+			{
+				if (*oper_it == old_nickname)
+				{
+					*oper_it = current_user.nickname;
+					break;
+				}
+			}
+		}
+	}
+	// send NICK message to all channels
+	std::string formatted_message = ":" + old_nickname + "!" + current_user.username + "@" + SERVER_NAME + " NICK :" + current_user.nickname;
+	send_message_to_joined_channels(current_user, formatted_message);
+}
+
 int IrcServer::nick_command(user &current_user, const std::vector<std::string> & tokens)
 {
 	// Vérifier si le pseudonyme est vide
@@ -369,7 +419,7 @@ int IrcServer::nick_command(user &current_user, const std::vector<std::string> &
 	if (current_user.status == REGISTERED)
 	{
 		send_message_to_client(current_user.socket, ":" + old_nickname + " NICK " + nickname);
-		// send_message_to_channel(channel_name, message);
+		update_nick_in_channels(current_user, old_nickname);
 	}
 	else
 		current_user.status = NICKNAME_SET;

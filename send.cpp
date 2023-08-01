@@ -21,7 +21,6 @@ void IrcServer::send_message_to_client(int client_socket, const std::string &mes
 
 void IrcServer::send_message_to_channel(const channel &current_chan, const std::string &message)
 {
-	std::cout << "sending to channeldksjdfkdjfldkjflkj" << std::endl;
     // Envoyer le message à tous les utilisateurs connectés au canal
     for (std::vector<std::string>::const_iterator user_it = current_chan.users.begin(); user_it != current_chan.users.end(); ++user_it)
     {
@@ -36,7 +35,7 @@ void IrcServer::send_message_to_channel(const channel &current_chan, const std::
 
 void IrcServer::send_message_to_channel_except(const std::string & sender, const channel &current_chan, const std::string &message)
 {
-    // Envoyer le message à tous les utilisateurs connectés au canal
+    // Envoyer le message à tous les utilisateurs connectés au canal sauf l'expéditeur
     for (std::vector<std::string>::const_iterator user_it = current_chan.users.begin(); user_it != current_chan.users.end(); ++user_it)
     {
         for (std::map<int, user>::iterator user_map_it = users_list.begin(); user_map_it != users_list.end(); ++user_map_it)
@@ -47,6 +46,16 @@ void IrcServer::send_message_to_channel_except(const std::string & sender, const
     }
 }
 
+void IrcServer::send_message_to_joined_channels(const user & current_user, const std::string &message)
+{
+    // Envoyer le message à tous les utilisateurs connectés au canal
+    for (std::vector<std::string>::const_iterator chan_it = current_user.channels.begin(); chan_it != current_user.channels.end(); ++chan_it)
+	{
+		std::map<std::string, channel>::iterator it = channels_list.find(*chan_it);
+		if (it != channels_list.end())
+			send_message_to_channel_except(current_user.nickname, it->second, message);
+	}
+}
 
 void IrcServer::send_message_to_all(const std::string& message)
 {

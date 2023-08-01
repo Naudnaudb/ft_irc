@@ -65,7 +65,8 @@ private:
 		std::string					realname;
 		int							status;
 		int							socket;
-		std::map<std::string, bool>	channels;// if not needed use a vector instead
+		// std::map<std::string, bool>	channels;// if not needed use a vector instead
+		std::vector<std::string>	channels;
 	};
 	class channel
 	{
@@ -115,12 +116,14 @@ private:
 	void remove_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens);
 	void request_chan_modes(const std::vector<std::string> &tokens, user &current_user);
 	int	get_user_socket_by_nick(const std::string & nick);
+	void update_nick_in_channels(user & current_user, const std::string & old_nickname);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
 	void send_message_to_channel(const channel &current_chan, const std::string &message);
 	void send_message_to_channel_except(const std::string & sender, const channel &current_chan, const std::string &message);
+	void send_message_to_joined_channels(const user & current_user, const std::string &message);
 	void send_message_to_all(const std::string& message);
 
 	bool check_password(const std::string &password, user &current_user);
