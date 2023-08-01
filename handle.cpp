@@ -60,7 +60,7 @@ int	IrcServer::handle_client_first_connection(user & current_user, std::vector<s
 		tokens.erase(tokens.begin(), tokens.begin() + 2);
 	}
 
-	if (!tokens.empty() && tokens[0] == "NICK")// send an error message or change behaviour
+	if (!tokens.empty() && tokens[0] == "NICK" && current_user.status == AUTHENTIFIED)// send an error message or change behaviour
 	{
 		if (nick_command(current_user, tokens) == -1)
 			return -1;

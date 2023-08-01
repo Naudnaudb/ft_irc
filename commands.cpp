@@ -153,7 +153,10 @@ void IrcServer::mode_command(const std::vector<std::string> &tokens, user &curre
 	else if (mode[0] == '-')
 		remove_chan_mode(current_chan, current_user, tokens);
 	else
-		send_response(current_user.socket, "472", "Unknown mode");
+		return send_response(current_user.socket, "472", "Unknown mode");
+	// send formatted message to the channel
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " MODE " + current_chan.name + " " + mode + " " + tokens[3];
+	send_message_to_channel(current_chan, formatted_message);
 }
 
 void IrcServer::whois_command(int client_socket, const std::string &nickname)
