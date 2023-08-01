@@ -336,6 +336,9 @@ void IrcServer::part_command(user &current_user, const std::string &channel_name
 	// erase channel from user's channel list
 	user_it = std::find(current_user.channels.begin(), current_user.channels.end(), channel_name);
 	current_user.channels.erase(user_it);
+	// if channel is empty, erase it
+	if (current_channel.users.empty())
+		channels_list.erase(it);
 }
 
 int IrcServer::user_command(user &current_user, const std::vector<std::string>& tokens)
@@ -453,7 +456,25 @@ void IrcServer::quit_command(user &current_user, const std::string &message)
 {
 	// Envoyer un message de départ à tous les utilisateurs connectés au canal
 	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " QUIT :" + message;
-	send_message_to_all(formatted_message);
+	send_message_to_client(current_user.socket, formatted_message);
+	send_message_to_joined_channels(current_user, formatted_message);
+	// Supprimer l'utilisateur de tous les canaux
+	for (std::vector<std::string>::iterator it = current_user.channels.begin(); it != current_user.channels.end(); ++it)
+	{
+		std::map<std::string, channel>::iterator chan_it = channels_list.find(*it);
+		channel & current_chan = chan_it->second;
+		if (chan_it != channels_list.end())
+		{
+			current_chan.users.erase(std::find(current_chan.users.begin(), current_chan.users.end(), current_user.nickname));
+			if (is_operator(current_user.nickname, current_chan))
+				current_chan.operators.erase(std::find(current_chan.operators.begin(), current_chan.operators.end(), current_user.nickname));
+			// if channel is empty, delete it
+			if (current_chan.users.empty())
+				channels_list.erase(chan_it);
+		}
+	}
+	// Supprimer les channels de l'utilisateur
+	current_user.channels.clear();
 
 	// Fermer la socket de l'utilisateur
 	shutdown(current_user.socket, SHUT_RDWR);
