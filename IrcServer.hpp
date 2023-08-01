@@ -76,7 +76,7 @@ private:
 			mode['t'] = false;
 			mode['k'] = false;
 			mode['l'] = false;
-			user_limit = __INT_MAX__;
+			user_limit = -1;
 			users.push_back(creator);
 			operators.push_back(creator);
 		}
@@ -87,7 +87,7 @@ private:
 		std::vector<std::string>	operators;
 		std::map<char, bool>		mode; // char = cle (i, t, k, o, l) & bool = false/true (0, 1)
 		std::string					key;
-		int							user_limit;
+		long unsigned int						user_limit;
 	private:
 		channel() {}
 	};
@@ -109,14 +109,15 @@ private:
 	void names_command(user &current_user, const std::string &channel_name);
 	int handle_client_first_connection(user & current_user, std::vector<std::string> tokens);
 	int fix_nickname_collision(user &current_user, std::string nickname);
-	void add_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_prommote);
-	void remove_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_remove);
+	int add_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_prommote);
+	int remove_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_remove);
 	int	user_exists(const std::string & nick);
 	void add_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens);
 	void remove_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens);
 	void request_chan_modes(const std::vector<std::string> &tokens, user &current_user);
 	int	get_user_socket_by_nick(const std::string & nick);
 	void update_nick_in_channels(user & current_user, const std::string & old_nickname);
+	int user_can_join_channel(const user & current_user, const channel & current_chan, const std::string & password);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);

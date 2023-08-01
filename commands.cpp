@@ -22,30 +22,38 @@ int		IrcServer::user_exists(const std::string & nick)
 	return 0;
 }
 
-void IrcServer::add_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_promote)
+int IrcServer::add_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_promote)
 {
 	// check if user_to_promote is on the channel
 	if (std::find(current_chan.users.begin(), current_chan.users.end(), user_to_promote) == current_chan.users.end())
-		return (send_response(current_user_socket, "442", user_to_promote + " " + current_chan.name + " :They aren't on that channel"));
+		send_response(current_user_socket, "442", user_to_promote + " " + current_chan.name + " :They aren't on that channel");
 	// check if user_to_promote exists
-	if (!user_exists(user_to_promote))
-		return (send_response(current_user_socket, "401", user_to_promote + " :No such nick"));
-	current_chan.operators.push_back(user_to_promote);
+	else if (!user_exists(user_to_promote))
+		send_response(current_user_socket, "401", user_to_promote + " :No such nick");
+	else
+	{
+		current_chan.operators.push_back(user_to_promote);
+		return 1;
+	}
+	return 0;
 }
 
-void IrcServer::remove_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_remove)
+int IrcServer::remove_chan_operator(const int current_user_socket, channel & current_chan, const std::string & user_to_remove)
 {
+	std::vector<std::string>::iterator it;
 	// check if user_to_remove is on the channel
 	if (std::find(current_chan.users.begin(), current_chan.users.end(), user_to_remove) == current_chan.users.end())
-		return (send_response(current_user_socket, "442", user_to_remove + " " + current_chan.name + " :They aren't on that channel"));
+		send_response(current_user_socket, "442", user_to_remove + " " + current_chan.name + " :They aren't on that channel");
 	// check if user_to_remove exists
-	if (!user_exists(user_to_remove))
-		return (send_response(current_user_socket, "401", user_to_remove + " :No such nick"));
+	else if (!user_exists(user_to_remove))
+		send_response(current_user_socket, "401", user_to_remove + " :No such nick");
 	// check if the user isn't operator
-	std::vector<std::string>::iterator it;
-	if ((it = std::find(current_chan.operators.begin(), current_chan.operators.end(), user_to_remove)) == current_chan.operators.end())
-		return ;
-	current_chan.operators.erase(it);
+	else if ((it = std::find(current_chan.operators.begin(), current_chan.operators.end(), user_to_remove)) != current_chan.operators.end())
+	{
+		current_chan.operators.erase(it);
+		return 1;
+	}
+	return 0;
 }
 
 void IrcServer::add_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens)
@@ -66,7 +74,8 @@ void IrcServer::add_chan_mode(channel & current_chan, user & current_user, const
 	{
 		if (tokens.size() != 4 || tokens[3].empty())
 			return (send_response(current_user.socket, "461", "This option needs a parameter"));
-		add_chan_operator(current_user.socket, current_chan, tokens[3]);
+		if (add_chan_operator(current_user.socket, current_chan, tokens[3]) == 0)
+			return ;
 		// current_user.channels[current_chan.name] = true;
 	}
 	else if (mode[1] == 'l')
@@ -81,6 +90,9 @@ void IrcServer::add_chan_mode(channel & current_chan, user & current_user, const
 		else
 			return (send_response(current_user.socket, "461", "Last parameter must be > 1"));
 	}
+	// send formatted message to the channel
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " MODE " + current_chan.name + " " + mode + " " + tokens[3];
+	send_message_to_channel(current_chan, formatted_message);
 }
 
 void IrcServer::remove_chan_mode(channel & current_chan, user & current_user, const std::vector<std::string> &tokens)
@@ -101,7 +113,8 @@ void IrcServer::remove_chan_mode(channel & current_chan, user & current_user, co
 	{
 		if (tokens.size() != 4 || tokens[3].empty())
 			return (send_response(current_user.socket, "461", "This option needs a parameter"));
-		remove_chan_operator(current_user.socket, current_chan, tokens[3]);
+		if (remove_chan_operator(current_user.socket, current_chan, tokens[3]) == 0)
+			return ;
 		// current_user.channels[current_chan.name] = false;
 	}
 	else if (mode[1] == 'l')
@@ -109,6 +122,9 @@ void IrcServer::remove_chan_mode(channel & current_chan, user & current_user, co
 		current_chan.mode['l'] = false;
 		current_chan.user_limit = __INT_MAX__;
 	}
+	// send formatted message to the channel
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " MODE " + current_chan.name + " " + mode + " " + tokens[3];
+	send_message_to_channel(current_chan, formatted_message);
 }
 
 void IrcServer::request_chan_modes(const std::vector<std::string> &tokens, user &current_user)
@@ -154,9 +170,6 @@ void IrcServer::mode_command(const std::vector<std::string> &tokens, user &curre
 		remove_chan_mode(current_chan, current_user, tokens);
 	else
 		return send_response(current_user.socket, "472", "Unknown mode");
-	// send formatted message to the channel
-	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " MODE " + current_chan.name + " " + mode + " " + tokens[3];
-	send_message_to_channel(current_chan, formatted_message);
 }
 
 void IrcServer::whois_command(int client_socket, const std::string &nickname)
@@ -185,6 +198,25 @@ int IrcServer::is_operator(const std::string & current_user, const channel & cur
 	return (std::find(current_chan.operators.begin(), current_chan.operators.end(), current_user) != current_chan.operators.end());
 }
 
+int IrcServer::user_can_join_channel(const user & current_user, const channel & current_chan, const std::string & password)
+{
+	// check if the user is already in the channel
+	if (std::find(current_chan.users.begin(), current_chan.users.end(), current_user.nickname) != current_chan.users.end())
+		return (0);
+	// check if the channel limit is reached
+	if (current_chan.users.size() >= current_chan.user_limit)
+		send_response(current_user.socket, "471", current_user.nickname + " " + current_chan.name + " :Cannot join channel (+l)");
+	// check if the channel is invite only
+	else if (current_chan.mode.at('i') && !is_operator(current_user.nickname, current_chan))
+		send_response(current_user.socket, "473", current_user.nickname + " " + current_chan.name + " :Cannot join channel (+i)");
+	// check if the channel is password protected
+	else if (current_chan.mode.at('k') && current_chan.key != password)
+		send_response(current_user.socket, "475", current_user.nickname + " " + current_chan.name + " :Cannot join channel (+k)");
+	else
+		return (1);
+	return (0);
+}
+
 void IrcServer::join_command(user &current_user, const std::vector<std::string> &tokens)
 {
 	// Vérifier si le nombre de paramètres est correct
@@ -194,10 +226,11 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 	// Vérifier si le canal existe déjà
 	if (channel_name[0] != '#' && channel_name[0] != '&')
 		return (send_response(current_user.socket, "403", channel_name + " :No such channel"));
+	// check if password is given
+	std::string password;
+	if (tokens.size() >= 3)
+		password = tokens[2];
 	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
-	// if the user is already in the channel
-	if (it != channels_list.end() && std::find(it->second.users.begin(), it->second.users.end(), current_user.nickname) != it->second.users.end())
-		return (send_response(current_user.socket, "443", channel_name + " :is already in use"));
 	if (it == channels_list.end())
 	{
 		if (!check_channel_name(channel_name))
@@ -205,11 +238,11 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 		channel new_channel(current_user.nickname, channel_name);
 		channels_list.insert(std::pair<std::string, channel>(channel_name, new_channel));
 	}
-	else
-	{
-		// Si le canal existe, ajouter l'utilisateur à la liste des utilisateurs du canal
+	else if (user_can_join_channel(current_user, it->second, password))
 		it->second.users.push_back(current_user.nickname);
-	}
+	else
+		return ;
+
 	// add channel to user's channel list
 	current_user.channels.push_back(channel_name);
 	// if the topic is set send it to the user
