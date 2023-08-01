@@ -317,39 +317,25 @@ void IrcServer::part_command(user &current_user, const std::string &channel_name
 	// Vérifier si le canal existe
 	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
 	if (it == channels_list.end())
-	{
-		send_response(current_user.socket, "403", channel_name + " :No such channel");
-		return;
-	}
+		return send_response(current_user.socket, "403", channel_name + " :No such channel");
+	channel & current_channel = it->second;
 
-	// Vérifier si l'utilisateur est connecté au canal
-	bool user_found = false;
-	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
+	std::vector<std::string>::iterator user_it = std::find(current_channel.users.begin(), current_channel.users.end(), current_user.nickname);
+	if (user_it == current_channel.users.end())
+		return send_response(current_user.socket, "442", channel_name + " :You're not on that channel");
+	// erase user from channel (send message before erasing)
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PART " + channel_name;
+	send_message_to_channel(current_channel, formatted_message);
+	current_channel.users.erase(user_it);
+	// if user is operator, remove from operator list
+	if (is_operator(current_user.nickname, current_channel))
 	{
-		if (*user_it == current_user.nickname)
-		{
-			// Envoyer un message de départ à tous les utilisateurs connectés au canal
-			std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " PART " + channel_name;
-			send_message_to_channel(it->second, formatted_message);
-			user_found = true;
-			// remove user from channel
-			it->second.users.erase(user_it);
-			// remove channel from user's channel list
-			for (std::vector<std::string>::iterator chan_it = current_user.channels.begin(); chan_it != current_user.channels.end(); ++chan_it)
-			{
-				if (*chan_it == channel_name)
-				{
-					current_user.channels.erase(chan_it);
-					break;
-				}
-			}
-			break;
-		}
+		user_it = std::find(current_channel.operators.begin(), current_channel.operators.end(), current_user.nickname);
+		current_channel.operators.erase(user_it);
 	}
-	if (!user_found)
-	{
-		send_response(current_user.socket, "442", channel_name + " :You're not on that channel");
-	}
+	// erase channel from user's channel list
+	user_it = std::find(current_user.channels.begin(), current_user.channels.end(), channel_name);
+	current_user.channels.erase(user_it);
 }
 
 int IrcServer::user_command(user &current_user, const std::vector<std::string>& tokens)
