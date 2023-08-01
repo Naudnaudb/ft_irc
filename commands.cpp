@@ -524,3 +524,33 @@ void IrcServer::names_command(user &current_user, const std::string &channel_nam
 	send_response(current_user.socket, "353", "= " + channel_name + " :" + user_list);
 	send_response(current_user.socket, "366", channel_name + " :End of /NAMES list");
 }
+
+void IrcServer::topic_command(const user & current_user, const std::vector<std::string> & tokens)
+{
+	// Pas de channel fourni
+	if (tokens.size() < 2)
+		return send_response(current_user.socket, "461", "TOPIC :Not enough parameters");
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator it = channels_list.find(tokens[1]);
+	if (it == channels_list.end())
+		return send_response(current_user.socket, "403", tokens[1] + " :No such channel");
+	channel & current_channel = it->second;
+	// Vérifier si l'utilisateur est connecté au canal
+	if (std::find(current_channel.users.begin(), current_channel.users.end(), current_user.nickname) == current_channel.users.end())
+		return send_response(current_user.socket, "442", current_channel.name + " :You're not on that channel");
+	// Si l'utilisateur n'est pas opérateur, envoyer une erreur
+	if (current_channel.mode.at('t') && !is_operator(current_user.nickname, current_channel))
+		return send_response(current_user.socket, "482", current_channel.name + " :You're not channel operator");
+	// Si pas de topic fourni, envoyer le topic du canal
+	if (tokens.size() == 2)
+	{
+		if (current_channel.topic.empty())
+			return send_response(current_user.socket, "331", current_channel.name + " :No topic is set");
+		return send_response(current_user.socket, "332", current_channel.name + " :" + current_channel.topic);
+	}
+	// Changer le topic du canal
+	current_channel.topic = tokens[2];
+	// Notifier les utilisateurs du canal du changement de topic
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " TOPIC " + current_channel.name + " " + current_channel.topic;
+	send_message_to_channel(current_channel, formatted_message);
+}

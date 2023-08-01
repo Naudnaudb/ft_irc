@@ -118,6 +118,7 @@ private:
 	int	get_user_socket_by_nick(const std::string & nick);
 	void update_nick_in_channels(user & current_user, const std::string & old_nickname);
 	int user_can_join_channel(const user & current_user, const channel & current_chan, const std::string & password);
+	void topic_command(const user & current_user, const std::vector<std::string> & tokens);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);

@@ -9,8 +9,9 @@ std::vector<std::string> IrcServer::tokenize(std::string &message)
 	message = message.substr(message.find("\r\n") + 2);
 	size_t start = current_command.find_first_not_of(" \n");
 	size_t end = current_command.find_first_of(" \n", start);
+	std::string command = current_command.substr(start, end - start);
 
-	if (current_command.substr(start, end - start) == "PRIVMSG")
+	if (command == "PRIVMSG" || command == "TOPIC")
 	{
 		for (size_t i = 0; start != std::string::npos && i < 2; ++i)
 		{
