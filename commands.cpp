@@ -207,7 +207,7 @@ int IrcServer::user_can_join_channel(const user & current_user, const channel & 
 	if (current_chan.users.size() >= current_chan.user_limit)
 		send_response(current_user.socket, "471", current_user.nickname + " " + current_chan.name + " :Cannot join channel (+l)");
 	// check if the channel is invite only
-	else if (current_chan.mode.at('i') && !is_operator(current_user.nickname, current_chan))
+	else if (current_chan.mode.at('i') && std::find(current_chan.invited_users.begin(), current_chan.invited_users.end(), current_user.nickname) == current_chan.invited_users.end())
 		send_response(current_user.socket, "473", current_user.nickname + " " + current_chan.name + " :Cannot join channel (+i)");
 	// check if the channel is password protected
 	else if (current_chan.mode.at('k') && current_chan.key != password)
@@ -239,7 +239,12 @@ void IrcServer::join_command(user &current_user, const std::vector<std::string> 
 		channels_list.insert(std::pair<std::string, channel>(channel_name, new_channel));
 	}
 	else if (user_can_join_channel(current_user, it->second, password))
+	{
 		it->second.users.push_back(current_user.nickname);
+		// remove user from invited list
+		if (it->second.mode.at('i'))
+			it->second.invited_users.erase(std::find(it->second.invited_users.begin(), it->second.invited_users.end(), current_user.nickname));
+	}
 	else
 		return ;
 
@@ -553,4 +558,37 @@ void IrcServer::topic_command(const user & current_user, const std::vector<std::
 	// Notifier les utilisateurs du canal du changement de topic
 	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " TOPIC " + current_channel.name + " " + current_channel.topic;
 	send_message_to_channel(current_channel, formatted_message);
+}
+
+void IrcServer::invite_command(const user & current_user, const std::vector<std::string> & tokens)
+{
+	// Pas de channel fourni
+	if (tokens.size() < 3)
+		return send_response(current_user.socket, "461", "INVITE :Not enough parameters");
+	// Vérifier si l'utilisateur existe
+	if (!user_exists(tokens[1]))
+		return send_response(current_user.socket, "401", tokens[1] + " :No such nick");
+	user & invited_user = users_list.at(get_user_socket_by_nick(tokens[1]));
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator chan_it = channels_list.find(tokens[2]);
+	if (chan_it == channels_list.end())
+		return send_response(current_user.socket, "403", tokens[2] + " :No such channel");
+	channel & current_channel = chan_it->second;
+	// Vérifier si l'utilisateur est connecté au canal
+	if (std::find(current_channel.users.begin(), current_channel.users.end(), current_user.nickname) == current_channel.users.end())
+		return send_response(current_user.socket, "442", current_channel.name + " :You're not on that channel");
+	// Si l'utilisateur n'est pas opérateur, envoyer une erreur
+	if (current_channel.mode.at('i') && !is_operator(current_user.nickname, current_channel))
+		return send_response(current_user.socket, "482", current_channel.name + " :You're not channel operator");
+	// Si l'utilisateur est déjà connecté au canal, envoyer une erreur
+	if (std::find(current_channel.users.begin(), current_channel.users.end(), invited_user.nickname) != current_channel.users.end())
+		return send_response(current_user.socket, "443", invited_user.nickname + " " + current_channel.name + " :is already on channel");
+	// Confirmer l'invitation à l'utilisateur
+	send_response(current_user.socket, "341", current_user.nickname + " " + invited_user.nickname + " " + current_channel.name);
+	// Envoyer l'invitation à l'utilisateur
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " INVITE " + invited_user.nickname + " :" + current_channel.name;
+	send_message_to_client(invited_user.socket, formatted_message);
+	// Ajouter l'utilisateur à la liste des utilisateurs invités
+	if (std::find(current_channel.invited_users.begin(), current_channel.invited_users.end(), invited_user.nickname) == current_channel.invited_users.end())
+		current_channel.invited_users.push_back(invited_user.nickname);
 }

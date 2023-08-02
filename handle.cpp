@@ -28,6 +28,8 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		names_command(current_user, tokens[1]);
 	else if (command == "TOPIC")
 		topic_command(current_user, tokens);
+	else if (command == "INVITE")
+		invite_command(current_user, tokens);
 	else
 		std::cout << "Unknown command" << std::endl;
 	return 0;
