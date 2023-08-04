@@ -607,7 +607,7 @@ void IrcServer::kick_command(const user & current_user, const std::vector<std::s
 	if (std::find(current_channel.users.begin(), current_channel.users.end(), current_user.nickname) == current_channel.users.end())
 		return send_response(current_user.socket, "442", current_channel.name + " :You're not on that channel");
 	// Si l'utilisateur n'est pas opérateur, envoyer une erreur
-	if (current_channel.mode.at('o') && !is_operator(current_user.nickname, current_channel))
+	if (!is_operator(current_user.nickname, current_channel))
 		return send_response(current_user.socket, "482", current_channel.name + " :You're not channel operator");
 	// Vérifier si l'utilisateur à kicker existe
 	std::map<int, user>::iterator user_it = users_list.find(get_user_socket_by_nick(tokens[2]));
@@ -619,7 +619,7 @@ void IrcServer::kick_command(const user & current_user, const std::vector<std::s
 		return send_response(current_user.socket, "441", kicked_user.nickname + " " + current_channel.name + " :isn't on that channel");
 	// Vérifier si l'utilisateur à kicker est opérateur
 	if (is_operator(kicked_user.nickname, current_channel))
-		return send_response(current_user.socket, "482", current_channel.name + " :You're not channel operator");
+		return send_response(current_user.socket, "482", current_channel.name + " :" + kicked_user.nickname + " is an operator");
 	// Envoyer un message de kick à l'utilisateur
 	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " KICK " + current_channel.name + " " + kicked_user.nickname + " :" + tokens[3];
 	send_message_to_client(kicked_user.socket, formatted_message);
