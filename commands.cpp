@@ -592,3 +592,46 @@ void IrcServer::invite_command(const user & current_user, const std::vector<std:
 	if (std::find(current_channel.invited_users.begin(), current_channel.invited_users.end(), invited_user.nickname) == current_channel.invited_users.end())
 		current_channel.invited_users.push_back(invited_user.nickname);
 }
+
+void IrcServer::kick_command(const user & current_user, const std::vector<std::string> & tokens)
+{
+	// Pas de channel fourni
+	if (tokens.size() < 3)
+		return send_response(current_user.socket, "461", "KICK :Not enough parameters");
+	// Vérifier si le canal existe
+	std::map<std::string, channel>::iterator chan_it = channels_list.find(tokens[1]);
+	if (chan_it == channels_list.end())
+		return send_response(current_user.socket, "403", tokens[1] + " :No such channel");
+	channel & current_channel = chan_it->second;
+	// Vérifier si l'utilisateur est connecté au canal
+	if (std::find(current_channel.users.begin(), current_channel.users.end(), current_user.nickname) == current_channel.users.end())
+		return send_response(current_user.socket, "442", current_channel.name + " :You're not on that channel");
+	// Si l'utilisateur n'est pas opérateur, envoyer une erreur
+	if (current_channel.mode.at('o') && !is_operator(current_user.nickname, current_channel))
+		return send_response(current_user.socket, "482", current_channel.name + " :You're not channel operator");
+	// Vérifier si l'utilisateur à kicker existe
+	std::map<int, user>::iterator user_it = users_list.find(get_user_socket_by_nick(tokens[2]));
+	if (user_it == users_list.end())
+		return send_response(current_user.socket, "401", tokens[2] + " :No such nick");
+	user & kicked_user = user_it->second;
+	// Vérifier si l'utilisateur à kicker est connecté au canal
+	if (std::find(current_channel.users.begin(), current_channel.users.end(), kicked_user.nickname) == current_channel.users.end())
+		return send_response(current_user.socket, "441", kicked_user.nickname + " " + current_channel.name + " :isn't on that channel");
+	// Vérifier si l'utilisateur à kicker est opérateur
+	if (is_operator(kicked_user.nickname, current_channel))
+		return send_response(current_user.socket, "482", current_channel.name + " :You're not channel operator");
+	// Envoyer un message de kick à l'utilisateur
+	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " KICK " + current_channel.name + " " + kicked_user.nickname + " :" + tokens[3];
+	send_message_to_client(kicked_user.socket, formatted_message);
+	// Envoyer un message de kick à tous les utilisateurs du canal
+	formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " KICK " + current_channel.name + " " + kicked_user.nickname + " :" + tokens[3];
+	send_message_to_channel(current_channel, formatted_message);
+	// Supprimer l'utilisateur du canal
+	current_channel.users.erase(std::remove(current_channel.users.begin(), current_channel.users.end(), kicked_user.nickname), current_channel.users.end());
+	// Supprimer l'utilisateur de la liste des opérateurs
+	current_channel.operators.erase(std::remove(current_channel.operators.begin(), current_channel.operators.end(), kicked_user.nickname), current_channel.operators.end());
+	// Supprimer l'utilisateur de la liste des utilisateurs invités
+	current_channel.invited_users.erase(std::remove(current_channel.invited_users.begin(), current_channel.invited_users.end(), kicked_user.nickname), current_channel.invited_users.end());
+	// Supprimer le canal de la liste des canaux de l'utilisateur
+	kicked_user.channels.erase(std::remove(kicked_user.channels.begin(), kicked_user.channels.end(), current_channel.name), kicked_user.channels.end());
+}
