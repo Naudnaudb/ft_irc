@@ -122,6 +122,7 @@ private:
 	int user_can_join_channel(const user & current_user, const channel & current_chan, const std::string & password);
 	void topic_command(const user & current_user, const std::vector<std::string> & tokens);
 	void invite_command(const user & current_user, const std::vector<std::string> & tokens);
+	void kick_command(const user & current_user, const std::vector<std::string> & tokens);
 	
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
