@@ -31,6 +31,7 @@
 # define AUTHENTIFIED 1
 # define NICKNAME_SET 2
 # define REGISTERED 3
+# define DISCONNECTED -1
 
 # define OFFLINE -1
 

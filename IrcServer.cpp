@@ -87,6 +87,8 @@ void IrcServer::poll_client_connections()
 					if (client_state == OFFLINE)
 					{
 						close(fds_to_poll[i].fd);
+						// Supprimer l'utilisateur de la liste des utilisateurs connectés
+						users_list.erase(fds_to_poll[i].fd);
 						fds_to_poll.erase(fds_to_poll.begin() + i);
 						--i;
 					}

@@ -10,7 +10,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		join_command(current_user, tokens);
 	else if (command == "NICK")
 		nick_command(current_user, tokens);
-	else if (command == "PRIVMSG")
+	else if (command == "PRIVMSG" || command == "NOTICE")
 		privmsg_command(current_user, tokens);
 	else if (command == "PING")
 		send_message_to_client(client_socket, "PONG");
@@ -32,7 +32,7 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		invite_command(current_user, tokens);
 	else
 		std::cout << "Unknown command" << std::endl;
-	return 0;
+	return current_user.status == DISCONNECTED ? -1 : 0;
 }
 
 bool IrcServer::check_password(const std::string & password, user & current_user)

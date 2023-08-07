@@ -482,10 +482,10 @@ void IrcServer::quit_command(user &current_user, const std::string &message)
 	current_user.channels.clear();
 
 	// Fermer la socket de l'utilisateur
-	shutdown(current_user.socket, SHUT_RDWR);
-
-	// Supprimer l'utilisateur de la liste des utilisateurs connectés
-	users_list.erase(current_user.socket);
+	// shutdown(current_user.socket, SHUT_RDWR);
+	close(current_user.socket);
+	// changer le status de l'utilisateur
+	current_user.status = DISCONNECTED;
 }
 
 void IrcServer::who_command(user &current_user, const std::string &channel_name)
