@@ -5,6 +5,8 @@
 std::vector<std::string> IrcServer::tokenize(std::string &message)
 {
 	std::vector<std::string> tokens;
+	if (message.find("\r\n") == std::string::npos)
+		return tokens;
 	std::string current_command = message.substr(0, message.find("\r\n"));
 	message = message.substr(message.find("\r\n") + 2);
 	size_t start = current_command.find_first_not_of(" \n");

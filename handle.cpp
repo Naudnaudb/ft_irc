@@ -48,6 +48,7 @@ bool IrcServer::check_password(const std::string & password, user & current_user
 		return false;
 	}
 	current_user.status = AUTHENTIFIED;
+	unregistered_users_list.insert(std::pair<int, user>(current_user.socket, current_user));
 	return true;
 }
 
@@ -75,15 +76,15 @@ int	IrcServer::handle_client_first_connection(user & current_user, std::vector<s
 		if (user_command(current_user, tokens) == -1)
 			return -1;
 		users_list.insert(std::pair<int, user>(current_user.socket, current_user));
+		unregistered_users_list.erase(current_user.socket);
 	}
 	return 0;
 }
 
 int IrcServer::handle_client_connection(int client_socket)
 {
-	user current_user(client_socket);
-	if (users_list.find(client_socket) != users_list.end())
-		current_user = users_list[client_socket];
+	user & current_user = users_list.find(client_socket) == users_list.end() ? unregistered_users_list[client_socket] : users_list[client_socket];
+	current_user.socket = client_socket;
 
 	struct sockaddr_in client_address_;
 
@@ -108,6 +109,8 @@ int IrcServer::handle_client_connection(int client_socket)
 	while (message.size() > 0 && res == 0)
 	{
 		std::vector<std::string> tokens = tokenize(message);
+		if (tokens.empty())
+			return -1;
 		// check if the client is new
 		if (users_list.find(client_socket) == users_list.end())
 			res = handle_client_first_connection(current_user, tokens);

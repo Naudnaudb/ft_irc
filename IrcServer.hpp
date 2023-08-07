@@ -142,6 +142,7 @@ private:
 
 
 	// users list where int parameter is the fd corresponding to the user
+	std::map<int , user> unregistered_users_list;
 	std::map<int , user> users_list;
 	std::map<std::string, channel> channels_list;
 };
