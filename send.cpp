@@ -24,7 +24,6 @@ void IrcServer::send_message_to_channel(const channel &current_chan, const std::
     // Envoyer le message à tous les utilisateurs connectés au canal
     for (std::vector<std::string>::const_iterator user_it = current_chan.users.begin(); user_it != current_chan.users.end(); ++user_it)
     {
-		std::cout << "sending to user : " << *user_it << std::endl;
         for (std::map<int, user>::iterator user_map_it = users_list.begin(); user_map_it != users_list.end(); ++user_map_it)
         {
             if (user_map_it->second.nickname == *user_it)

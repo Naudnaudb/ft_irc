@@ -5,7 +5,6 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 	user & current_user = users_list[client_socket];
 	std::string nickname = users_list[client_socket].nickname;
 	std::string command = tokens[0];
-	std::cout << "Commande reçue : " << command << std::endl;
 	if (command == "JOIN")
 		join_command(current_user, tokens);
 	else if (command == "NICK")
@@ -90,7 +89,7 @@ int IrcServer::handle_client_connection(int client_socket)
 
 	socklen_t client_address_length = sizeof(client_address_);
 	getpeername(client_socket, (struct sockaddr *)&client_address_, &client_address_length);
-	std::cout << "New incoming connection : " << inet_ntoa(client_address_.sin_addr) << std::endl;
+	inet_ntoa(client_address_.sin_addr);
 
 	char buffer[4096];
 	int bytes_received = recv(client_socket, buffer, 4096, 0);

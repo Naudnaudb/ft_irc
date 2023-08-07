@@ -370,7 +370,7 @@ int IrcServer::user_command(user &current_user, const std::vector<std::string>& 
 	send_message_to_client(current_user.socket, ":" + std::string(SERVER_NAME) + " 001 " + current_user.nickname + " :Welcome to the server " + SERVER_NAME + ", " + current_user.nickname + " !");
 	return (0);
 }
-#include <stdlib.h>
+
 int	IrcServer::fix_nickname_collision(user &current_user, std::string nickname)
 {
 	int i = 0;
