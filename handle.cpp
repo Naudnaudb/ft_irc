@@ -27,8 +27,6 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		invite_command(current_user, tokens);
 	else if (command == "KICK")
 		kick_command(current_user, tokens);
-	else
-		std::cout << "Unknown command" << std::endl;
 	return current_user.status == DISCONNECTED ? -1 : 0;
 }
 
