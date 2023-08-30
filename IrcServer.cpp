@@ -44,9 +44,11 @@ void close_server(int sig)
 
 void IrcServer::poll_client_connections()
 {
-    std::vector<pollfd> fds_to_poll(1);
-    fds_to_poll[1].fd = server_socket_;
-    fds_to_poll[1].events = POLLIN;
+    std::vector<pollfd> fds_to_poll;
+    pollfd server_poll;
+    server_poll.fd = server_socket_;
+    server_poll.events = POLLIN;
+    fds_to_poll.push_back(server_poll);
 
     while (true)
     {
