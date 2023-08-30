@@ -48,6 +48,7 @@ void IrcServer::poll_client_connections()
     pollfd server_poll;
     server_poll.fd = server_socket_;
     server_poll.events = POLLIN;
+    server_poll.revents = 0;
     fds_to_poll.push_back(server_poll);
 
     while (true)
@@ -81,6 +82,7 @@ void IrcServer::poll_client_connections()
 					pollfd new_client_fd;
 					new_client_fd.fd = client_socket;
 					new_client_fd.events = POLLIN;
+					new_client_fd.revents = 0;
 					fds_to_poll.push_back(new_client_fd);
 				}
 				else
