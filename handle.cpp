@@ -15,14 +15,10 @@ int IrcServer::handle_command(int client_socket, const std::vector<std::string> 
 		send_message_to_client(client_socket, "PONG");
 	else if (command == "MODE")
 		mode_command(tokens, current_user);
-	else if (command == "WHOIS")
-		whois_command(client_socket, nickname);
 	else if (command == "PART")
 		part_command(current_user, tokens[1]);
 	else if (command == "QUIT")
 		quit_command(current_user, tokens[1]);
-	else if (command == "WHO")
-		who_command(current_user, tokens[1]);
 	else if (command == "NAMES")
 		names_command(current_user, tokens[1]);
 	else if (command == "TOPIC")

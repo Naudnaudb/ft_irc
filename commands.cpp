@@ -172,13 +172,6 @@ void IrcServer::mode_command(const std::vector<std::string> &tokens, user &curre
 		return send_response(current_user.socket, "472", "Unknown mode");
 }
 
-void IrcServer::whois_command(int client_socket, const std::string &nickname)
-{
-	nickname.empty();
-	std::string message = "You are in invisible mode";
-	send_response(client_socket, "WHOIS", message);
-}
-
 int IrcServer::check_channel_name(const std::string &channel_name)
 {
 	if (channel_name.empty() || channel_name.size() > 200)
@@ -488,27 +481,6 @@ void IrcServer::quit_command(user &current_user, const std::string &message)
 	current_user.status = DISCONNECTED;
 }
 
-void IrcServer::who_command(user &current_user, const std::string &channel_name)
-{
-	// Vérifier si le canal existe
-	std::map<std::string, channel>::iterator it = channels_list.find(channel_name);
-	if (it == channels_list.end())
-	{
-		send_response(current_user.socket, "403", channel_name + " :No such channel");
-		return;
-	}
-
-	// Envoyer la liste des utilisateurs connectés au canal
-	for (std::vector<std::string>::iterator user_it = it->second.users.begin(); user_it != it->second.users.end(); ++user_it)
-	{
-		std::map<int, user>::iterator user_list_it = users_list.find(current_user.socket);
-		if (user_list_it != users_list.end())
-		{
-			std::string formatted_message = ":" + std::string(SERVER_NAME) + " 352 " + current_user.nickname + " " + channel_name + " " + user_list_it->second.username + " " + SERVER_NAME + " " + user_list_it->second.nickname;
-			send_response(current_user.socket, "352", formatted_message);
-		}
-	}
-}
 
 void IrcServer::names_command(user &current_user, const std::string &channel_name)
 {

@@ -105,9 +105,7 @@ private:
 	void privmsg_command(user &current_user, const std::vector<std::string> &tokens);
 	void part_command(user &current_user, const std::string &channel_name);
 	void mode_command(const std::vector<std::string> &tokens, user &current_user);
-	void whois_command(int client_socket, const std::string &nickname);
 	void quit_command(user &current_user, const std::string &message);
-	void who_command(user &current_user, const std::string &channel_name);
 	void names_command(user &current_user, const std::string &channel_name);
 	int handle_client_first_connection(user & current_user, std::vector<std::string> tokens);
 	int fix_nickname_collision(user &current_user, std::string nickname);
