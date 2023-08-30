@@ -10,7 +10,7 @@ bool check_args(int argc, char **argv, int &PORT, std::string &PASSWORD)
 		return (false);
 	}
 	PORT = strtol(argv[1], &endptr, 10);
-	if (*endptr != '\0')
+	if (*endptr != '\0'|| PORT < 4 || PORT > 65535)
 	{
 		std::cout << "Invalid port" << std::endl;
 		return (false);
