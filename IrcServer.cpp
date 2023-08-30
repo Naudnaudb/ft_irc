@@ -37,22 +37,23 @@ std::vector<std::string> IrcServer::tokenize(std::string &message)
 	return tokens;
 }
 
+void close_server(int sig)
+{
+    (void)sig;
+}
+
 void IrcServer::poll_client_connections()
 {
-	std::vector<pollfd> fds_to_poll;
-	pollfd server_poll;
-	server_poll.fd = server_socket_;
-	server_poll.events = POLLIN;
-	fds_to_poll.push_back(server_poll);
+    std::vector<pollfd> fds_to_poll(1);
+    fds_to_poll[1].fd = server_socket_;
+    fds_to_poll[1].events = POLLIN;
 
-	while (true)
-	{
+    while (true)
+    {
+        signal(SIGINT, close_server);
 		int poll_result = poll(fds_to_poll.data(), fds_to_poll.size(), -1);
 		if (poll_result < 0)
-		{
-			perror("Error : Poll");
-			exit(EXIT_FAILURE);
-		}
+			return(perror("Error : Poll"));
 
 		for (size_t i = 0; i < fds_to_poll.size(); ++i)
 		{
