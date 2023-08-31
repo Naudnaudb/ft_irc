@@ -16,6 +16,11 @@ bool check_args(int argc, char **argv, int &PORT, std::string &PASSWORD)
 		return (false);
 	}
 	PASSWORD = argv[2];
+	if (PASSWORD.empty())
+	{
+		std::cout << "Invalid password" << std::endl;
+		return (false);
+	}
 	return (true);
 }
 
