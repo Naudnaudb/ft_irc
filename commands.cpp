@@ -91,7 +91,12 @@ void IrcServer::add_chan_mode(channel & current_chan, user & current_user, const
 			return (send_response(current_user.socket, "461", "Last parameter must be > 1"));
 	}
 	// send formatted message to the channel
-	std::string formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " MODE " + current_chan.name + " " + mode + " " + tokens[3];
+	//if tokens[3] is empty, send only the mode
+	std::string formatted_message;
+	if (tokens.size() == 3)
+		formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " MODE " + current_chan.name + " " + mode;
+	else
+		formatted_message = ":" + current_user.nickname + "!" + current_user.username + "@" + SERVER_NAME + " MODE " + current_chan.name + " " + mode + " " + tokens[3];
 	send_message_to_channel(current_chan, formatted_message);
 }
 
