@@ -440,6 +440,11 @@ int IrcServer::nick_command(user &current_user, const std::vector<std::string> &
 		send_response(current_user.socket, "431", "No nickname given");
 		return -1;
 	}
+	if (tokens[1].find_first_of("!@#$%^&*(){}[]|\\\"':;?/>.<,`~") != std::string::npos)
+	{
+		send_response(current_user.socket, "432", "Error: nickname contains forbidden characters");
+		return -1;
+	}
 	if (current_user.nickname == tokens[1])
 		return 0;
 	std::string nickname = tokens[1];
