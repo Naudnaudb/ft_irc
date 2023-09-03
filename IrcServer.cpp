@@ -2,11 +2,19 @@
 
 #define MAX_CONNECTIONS 1000
 
-std::vector<std::string> IrcServer::tokenize(std::string &message)
+std::vector<std::string> IrcServer::tokenize(int client_socket, std::string &message)
 {
 	std::vector<std::string> tokens;
 	if (message.find("\r\n") == std::string::npos)
+	{
+		msg_buffer[client_socket] += message;
 		return tokens;
+	}
+	else if (msg_buffer.find(client_socket) != msg_buffer.end())
+	{
+		message = msg_buffer[client_socket] + message;
+		msg_buffer.erase(client_socket);
+	}
 	std::string current_command = message.substr(0, message.find("\r\n"));
 	message = message.substr(message.find("\r\n") + 2);
 	size_t start = current_command.find_first_not_of(" \n");
@@ -92,8 +100,12 @@ void IrcServer::poll_client_connections()
 					if (client_state == OFFLINE)
 					{
 						close(fds_to_poll[i].fd);
-						// Supprimer l'utilisateur de la liste des utilisateurs connectés
+						// Supprimer le message du buffer si il existe
+						if (msg_buffer.find(fds_to_poll[i].fd) != msg_buffer.end())
+							msg_buffer.erase(fds_to_poll[i].fd);
+						// Supprimer l'utilisateur de la liste des utilisateurs non authentifiés
 						unregistered_users_list.erase(fds_to_poll[i].fd);
+						// Supprimer l'utilisateur de la liste des utilisateurs connectés
 						users_list.erase(fds_to_poll[i].fd);
 						fds_to_poll.erase(fds_to_poll.begin() + i);
 						--i;

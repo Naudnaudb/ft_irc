@@ -94,7 +94,7 @@ private:
 		channel() {}
 	};
 
-	std::vector<std::string> tokenize(std::string &message);
+	std::vector<std::string> tokenize(int client_socket, std::string &message);
 
 	//	handle.cpp
 	int handle_client_connection(int client_socket);
@@ -145,6 +145,7 @@ private:
 	std::map<int , user> unregistered_users_list;
 	std::map<int , user> users_list;
 	std::map<std::string, channel> channels_list;
+	std::map<int, std::string> msg_buffer;
 };
 void split(const std::string &s, char delim, std::vector<std::string> & dest);
 #endif

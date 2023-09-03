@@ -103,9 +103,9 @@ int IrcServer::handle_client_connection(int client_socket)
 	int res = 0;
 	while (message.size() > 0 && res == 0)
 	{
-		std::vector<std::string> tokens = tokenize(message);
+		std::vector<std::string> tokens = tokenize(client_socket, message);
 		if (tokens.empty())
-			return -1;
+			break ;
 		// check if the client is new
 		if (users_list.find(client_socket) == users_list.end())
 			res = handle_client_first_connection(current_user, tokens);
