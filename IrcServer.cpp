@@ -93,6 +93,7 @@ void IrcServer::poll_client_connections()
 					{
 						close(fds_to_poll[i].fd);
 						// Supprimer l'utilisateur de la liste des utilisateurs connectés
+						unregistered_users_list.erase(fds_to_poll[i].fd);
 						users_list.erase(fds_to_poll[i].fd);
 						fds_to_poll.erase(fds_to_poll.begin() + i);
 						--i;
