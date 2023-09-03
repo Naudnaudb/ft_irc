@@ -98,7 +98,7 @@ int IrcServer::handle_client_connection(int client_socket)
 		return -1;
 	std::string message(buffer, bytes_received);
 	// if the message is empty it means client disconnected
-	if (message.empty())
+	if (message.empty() || message == "\r\n")
 		return -1;
 	int res = 0;
 	while (message.size() > 0 && res == 0)
