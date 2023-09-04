@@ -65,6 +65,7 @@ private:
 			}
 			return *this;
 		}
+		~user() {}
 		std::string					nickname;
 		std::string					username;
 		std::string					realname;
@@ -87,6 +88,7 @@ private:
 			operators.push_back(creator);
 		}
 		channel(const channel &other) : name(other.name), topic(other.topic), users(other.users), operators(other.operators), mode(other.mode), key(other.key), user_limit(other.user_limit) {}
+		~channel() {}
 		std::string					name;
 		std::string					topic;
 		std::vector<std::string>	users;
