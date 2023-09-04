@@ -38,12 +38,12 @@
 class IrcServer
 {
 public:
-	//	IrcServer.cpp
+	//	IrcServer constructor
 	IrcServer(int port, const std::string &password);
 	void poll_client_connections();
 
 private:
-	//	IrcServer.cpp
+	// User class
 	class user
 	{
 	public:
@@ -69,6 +69,8 @@ private:
 		// std::map<std::string, bool>	channels;// if not needed use a vector instead
 		std::vector<std::string>	channels;
 	};
+
+	// Channel class
 	class channel
 	{
 	public:
@@ -94,9 +96,8 @@ private:
 		channel() {}
 	};
 
+	// IrcServer methods
 	std::vector<std::string> tokenize(int client_socket, std::string &message);
-
-	//	handle.cpp
 	int handle_client_connection(int client_socket);
 	int handle_command(int client_socket, const std::vector<std::string> &tokens);
 	int nick_command(user &current_user, const std::vector<std::string> & tokens);
@@ -121,7 +122,9 @@ private:
 	void topic_command(const user & current_user, const std::vector<std::string> & tokens);
 	void invite_command(const user & current_user, const std::vector<std::string> & tokens);
 	void kick_command(const user & current_user, const std::vector<std::string> & tokens);
-	
+	bool check_password(const std::string &password, user &current_user);
+	int check_channel_name(const std::string &channel_name);
+	int is_operator(const std::string & current_user, const channel & current_chan);
 	//	send.cpp
 	void send_response(int client_socket, const std::string &response_code, const std::string &message);
 	void send_message_to_client(int client_socket, const std::string &message);
@@ -130,22 +133,19 @@ private:
 	void send_message_to_joined_channels(const user & current_user, const std::string &message);
 	void send_message_to_all(const std::string& message);
 
-	bool check_password(const std::string &password, user &current_user);
-	int check_channel_name(const std::string &channel_name);
-	int is_operator(const std::string & current_user, const channel & current_chan);
+	// private members
+	int					port_;
+	std::string			password_;
+	int					server_socket_;
+	struct sockaddr_in	server_address_;
+	struct sockaddr_in	client_address_;
 
-	int port_;
-	std::string password_;
-	int server_socket_;
-	struct sockaddr_in server_address_;
-	struct sockaddr_in client_address_;
-
-
-	// users list where int parameter is the fd corresponding to the user
-	std::map<int , user> unregistered_users_list;
-	std::map<int , user> users_list;
-	std::map<std::string, channel> channels_list;
-	std::map<int, std::string> msg_buffer;
+	std::map<int , user>			unregistered_users_list;
+	std::map<int , user>			users_list;
+	std::map<std::string, channel>	channels_list;
+	std::map<int, std::string>		msg_buffer;
 };
+// Non-member functions
 void split(const std::string &s, char delim, std::vector<std::string> & dest);
+
 #endif
