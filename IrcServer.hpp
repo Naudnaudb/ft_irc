@@ -40,9 +40,13 @@ class IrcServer
 public:
 	//	IrcServer constructor
 	IrcServer(int port, const std::string &password);
+	//	IrcServer destructor
+	~IrcServer() {}
 	void poll_client_connections();
 
 private:
+	IrcServer() {}
+	IrcServer(const IrcServer &other) {(void)other;}
 	// User class
 	class user
 	{
@@ -66,7 +70,6 @@ private:
 		std::string					realname;
 		int							status;
 		int							socket;
-		// std::map<std::string, bool>	channels;// if not needed use a vector instead
 		std::vector<std::string>	channels;
 	};
 
